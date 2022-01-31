@@ -3,7 +3,7 @@ import time
 from kernels import *
 
 
-def update(blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv):
+def update(blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv, particlesPerFil):
     iterationTime = time.time()
 
 
@@ -11,8 +11,6 @@ def update(blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv):
     # Attachment point of the very first filaments row
     for blade in blades:
         blade.updateFirstWakeRow()
-        #blade.updateCentersPos()
-
 
     # Generate new particles #######################################################
     t0 = time.time()
@@ -23,25 +21,25 @@ def update(blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv):
         # Emission after first row, uses (uInfty+induction)*dt to create right Nodes, left Nodes are taken as trailing edge nodes
         bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getFilamentsInfo(uInfty, timeStep)
 
-        leftNodes = np.concatenate((leftNodes, bladeLeftNodes), axis=0)
-        rightNodes = np.concatenate((rightNodes, bladeRightNodes), axis=0)
+        leftNodes    = np.concatenate((leftNodes, bladeLeftNodes), axis=0)
+        rightNodes   = np.concatenate((rightNodes, bladeRightNodes), axis=0)
         circulations = np.concatenate((circulations, bladeCirculations), axis=0)
 
-    nParts = 2
+    #wake.addParticlesFromFilaments(leftNodes, rightNodes, circulations)
 
-    if(nParts == 1):
-        # One particle
-        wake.addParticlesFromFilaments(leftNodes, rightNodes, circulations)
-    elif(nParts == 2):
-        # Two particles
-        wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 3, 1,2)
-        wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 1, 3,2)
-    else:
-        # Three particles
-        wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 3, 1, 3)
-        wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 2, 2, 3)
-        wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 1, 3, 3)
+    wake.addParticlesFromFilaments_50(leftNodes, rightNodes, circulations, particlesPerFil)
 
+   #for numPart in range(particlesPerFil):
+   #    numPart = numPart + 1
+   #    denom = particlesPerFil + 1
+   #    rightCoef = numPart
+   #    leftCoef = denom - numPart
+   #    wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, denom, leftCoef, rightCoef, particlesPerFil)
+
+
+    #wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 3, 1,3)
+    #wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 2, 2,3)
+    #wake.addParticlesFromFilaments_2(leftNodes, rightNodes, circulations, 4, 1, 3,3)
     t1 = time.time()
     print('addParticles: ', t1 - t0)
 

@@ -2,6 +2,47 @@ import numpy as np
 from numba import jit, prange, njit
 
 @njit(fastmath=True)
+def addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particlesPerFil):
+
+    newPosX = np.zeros(len(circulations) * particlesPerFil)
+    newPosY = np.zeros(len(circulations) * particlesPerFil)
+    newPosZ = np.zeros(len(circulations) * particlesPerFil)
+
+    newVorX = np.zeros(len(circulations) * particlesPerFil)
+    newVorY = np.zeros(len(circulations) * particlesPerFil)
+    newVorZ = np.zeros(len(circulations) * particlesPerFil)
+
+    newRadius = np.zeros(len(circulations) * particlesPerFil)
+
+    ptclesCounter = 0
+
+    for i in range(len(circulations)):
+        for numParticle in range(particlesPerFil):
+            rightCoef = numParticle + 1
+            leftCoef = particlesPerFil - numParticle
+
+            particlePosition = 1. / (particlesPerFil + 1.) * (leftCoef * leftNodes[i] + rightCoef * rightNodes[i])
+
+            filamentLength = np.linalg.norm(rightNodes[i] - leftNodes[i])
+            unitVector = (rightNodes[i] - leftNodes[i]) / filamentLength
+            particleRadius = .5 * filamentLength
+            particleVorticity = circulations[i] * filamentLength * unitVector / particlesPerFil
+
+            newPosX[ptclesCounter] = particlePosition[0]
+            newPosY[ptclesCounter] = particlePosition[1]
+            newPosZ[ptclesCounter] = particlePosition[2]
+
+            newVorX[ptclesCounter] = particleVorticity[0]
+            newVorY[ptclesCounter] = particleVorticity[1]
+            newVorZ[ptclesCounter] = particleVorticity[2]
+
+            newRadius[ptclesCounter] = particleRadius
+
+            ptclesCounter += 1
+
+    return newPosX, newPosY, newPosZ, newVorX, newVorY, newVorZ, newRadius
+
+@njit(fastmath=True)
 def advectJit(posX, posY, posZ, vels, uInf, timeStep, length):
     for i in range(length):
         advectionDistance = np.asarray(uInf + vels[i]) * timeStep
@@ -31,66 +72,64 @@ class Wake:
 
         return
 
-    def addParticlesFromFilaments(self, leftNodes, rightNodes, circulations):
-        # Particle Position
-        particlePositions = .5 * (leftNodes + rightNodes)
 
-        for i in range(len(circulations)):
-            filamentLength = np.linalg.norm(rightNodes[i] - leftNodes[i])
 
-            unitVector = (rightNodes[i] - leftNodes[i]) / filamentLength
+    def addParticlesFromFilaments_50(self, leftNodes, rightNodes, circulations, particlesPerFil):
 
-            particleRadius = 0.75 * filamentLength
-            # particleCoreSize = filamentLength * (1.0 / (1.0 + 0.1))
-            # initialCoreSize = particleCoreSize
+        # newPosX = np.zeros(len(circulations) * particlesPerFil)
+        # newPosY = np.zeros(len(circulations) * particlesPerFil)
+        # newPosZ = np.zeros(len(circulations) * particlesPerFil)
+        #
+        # newVorX = np.zeros(len(circulations) * particlesPerFil)
+        # newVorY = np.zeros(len(circulations) * particlesPerFil)
+        # newVorZ = np.zeros(len(circulations) * particlesPerFil)
+        #
+        # newRadius = np.zeros(len(circulations) * particlesPerFil)
+        #
+        # ptclesCounter = 0
+        #
+        # for i in range(len(circulations)):
+        #     for numParticle in range(particlesPerFil):
+        #
+        #         rightCoef = numParticle + 1
+        #         leftCoef = particlesPerFil - numParticle
+        #
+        #         particlePosition = 1. / (particlesPerFil+1.) * (leftCoef * leftNodes[i] + rightCoef * rightNodes[i])
+        #
+        #
+        #         filamentLength =  np.linalg.norm(rightNodes[i] - leftNodes[i])
+        #         unitVector = (rightNodes[i] - leftNodes[i]) / filamentLength
+        #         particleRadius = .5 * filamentLength
+        #         particleVorticity = circulations[i] * filamentLength * unitVector / particlesPerFil
+        #
+        #         newPosX[ptclesCounter] = particlePosition[0]
+        #         newPosY[ptclesCounter] = particlePosition[1]
+        #         newPosZ[ptclesCounter] = particlePosition[2]
+        #
+        #         newVorX[ptclesCounter] = particleVorticity[0]
+        #         newVorY[ptclesCounter] = particleVorticity[1]
+        #         newVorZ[ptclesCounter] = particleVorticity[2]
+        #
+        #         newRadius[ptclesCounter] = particleRadius
+        #
+        #         ptclesCounter += 1
 
-            # print('particle Vorticity: ', circulations[i] * filamentLength * unitVector)
-            particleVorticity = circulations[i] * filamentLength * unitVector
+        newPosX, newPosY, newPosZ, newVorX, newVorY, newVorZ, newRadius = addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particlesPerFil)
 
-            self.particlesPositionX = np.append(self.particlesPositionX, particlePositions[i][0])
-            self.particlesPositionY = np.append(self.particlesPositionY, particlePositions[i][1])
-            self.particlesPositionZ = np.append(self.particlesPositionZ, particlePositions[i][2])
+        self.particlesPositionX = np.concatenate((self.particlesPositionX, newPosX), axis=0)
+        self.particlesPositionY = np.concatenate((self.particlesPositionY, newPosY), axis=0)
+        self.particlesPositionZ = np.concatenate((self.particlesPositionZ, newPosZ), axis=0)
 
-            self.particlesVorticityX = np.append(self.particlesVorticityX, particleVorticity[0])
-            self.particlesVorticityY = np.append(self.particlesVorticityY, particleVorticity[1])
-            self.particlesVorticityZ = np.append(self.particlesVorticityZ, particleVorticity[2])
+        self.particlesVorticityX = np.concatenate((self.particlesVorticityX, newVorX), axis=0)
+        self.particlesVorticityY = np.concatenate((self.particlesVorticityY, newVorY), axis=0)
+        self.particlesVorticityZ = np.concatenate((self.particlesVorticityZ, newVorZ), axis=0)
 
-            self.particlesRadius = np.append(self.particlesRadius, particleRadius)
-            # self.particlesCoreSize = np.append(self.particlesCoreSize, particleCoreSize)
-            # self.initialCoreSize = np.append(self.initialCoreSize, initialCoreSize)
-        return
-
-    def addParticlesFromFilaments_2(self, leftNodes, rightNodes, circulations, denom, firstRightCoef, firstLeftCoef, numPart):
-        # Particle Position
-        # particlePositions = .5 * (leftNodes + rightNodes)
-        # particlePositions = ptcPos * (leftNodes + rightNodes)
-
-        particlePositions_1 = 1. / denom * (firstLeftCoef * leftNodes + firstRightCoef * rightNodes)
-
-        for i in range(len(circulations)):
-            filamentLength = 1./numPart * np.linalg.norm(rightNodes[i] - leftNodes[i])
-
-            unitVector = 1./numPart * (rightNodes[i] - leftNodes[i]) / filamentLength
-
-            particleRadius = .5 * filamentLength
-            particleCoreSize = filamentLength * (1.0 / (1.0 + 0.1))
-            initialCoreSize = particleCoreSize
-
-            particleVorticity = circulations[i] * filamentLength * unitVector
-
-            self.particlesPositionX = np.append(self.particlesPositionX, particlePositions_1[i][0])
-            self.particlesPositionY = np.append(self.particlesPositionY, particlePositions_1[i][1])
-            self.particlesPositionZ = np.append(self.particlesPositionZ, particlePositions_1[i][2])
-
-            self.particlesVorticityX = np.append(self.particlesVorticityX, particleVorticity[0])
-            self.particlesVorticityY = np.append(self.particlesVorticityY, particleVorticity[1])
-            self.particlesVorticityZ = np.append(self.particlesVorticityZ, particleVorticity[2])
-
-            self.particlesRadius = np.append(self.particlesRadius, particleRadius)
-            self.particlesCoreSize = np.append(self.particlesCoreSize, particleCoreSize)
-            self.initialCoreSize = np.append(self.initialCoreSize, initialCoreSize)
+        self.particlesRadius = np.concatenate((self.particlesRadius, newRadius), axis=0)
 
         return
+
+
+
 
     def advectParticles(self, uInfty, timeStep):
         posX = np.asarray(self.particlesPositionX)

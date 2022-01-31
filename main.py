@@ -1,11 +1,11 @@
 import os
 import numpy as np
-from scipy import interpolate
 
 from windTurbine import *
 from airfoil import *
 from blade import *
 from solver import *
+from scipy import interpolate
 
 # Post-processing directory
 # Create target directory & all intermediate directories if don't exists
@@ -30,7 +30,7 @@ def NewMexicoWindTurbine():
 
     data = np.genfromtxt('turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
 
-    refRadius = np.linspace(0., 2.04, 50) # data[:,2] #
+    refRadius = data[:,2]#np.linspace(0., 2.04, 50) # data[:,2] #
 
     # Radius start at blade root, not hub center!
     inputNodesTwistAngles = -sign * np.radians(data[:, 5])
@@ -140,19 +140,20 @@ def StraightWingCastor():
     return Blades, uInfty, deltaFlts
 
 
-def EllipticalWing():
+def EllipticalWing(bladePitch):
     # Blade discretisation
     nBladeCenters = 40
 
-    AR = 6.
+    AR = 18.
     bladeLength = 10.
     cRoot = 4 * bladeLength / (AR * np.pi)
-    bladePitch = 5.
+    bladePitch = bladePitch
     uInfty = 1.
 
     # Multiple straight wings
     nodes = np.zeros([nBladeCenters + 1, 3])
     nodes[:, 1] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
+    centers = .5 * (nodes[1:] + nodes[:-1])
 
     nodeChords = np.zeros(len(nodes))
     for i in range(len(nodes)):
@@ -183,13 +184,27 @@ def EllipticalWing():
     return Blades, uInfty, deltaFlts
 
 
+
+
+
+
+
+#def write_particles(outDir):
+#    output = open(outDir + '/New_Particles_tStep_' + str(it) + '.particles', 'w')
+#    for i in range(len(wake.particlesPositionX)):
+#        output.write(str(wake.particlesPositionX[i]) + " " + str(wake.particlesPositionY[i]) + " " + str(
+#            wake.particlesPositionZ[i]) + " " + str(np.sqrt(
+#            wake.particlesVorticityX[i] ** 2. + wake.particlesVorticityY[i] ** 2. + wake.particlesVorticityZ[
+#                i] ** 2.)) + "\n")
+#    output.close()
+
+#    return
+
 def write_particles(outDir):
     output = open(outDir + '/New_Particles_tStep_' + str(it) + '.particles', 'w')
     for i in range(len(wake.particlesPositionX)):
         output.write(str(wake.particlesPositionX[i]) + " " + str(wake.particlesPositionY[i]) + " " + str(
-            wake.particlesPositionZ[i]) + " " + str(np.sqrt(
-            wake.particlesVorticityX[i] ** 2. + wake.particlesVorticityY[i] ** 2. + wake.particlesVorticityZ[
-                i] ** 2.)) + "\n")
+            wake.particlesPositionZ[i]) + " " + "\n")
     output.close()
 
     return
@@ -208,8 +223,71 @@ def write_blade(blades, outDir):
         output.close()
     return
 
+############ Elliptical change of pitch case #############################
+#
+#timeStep = 0.1
+#timeEnd = 20.
+## timeEnd = 0.2
+#innerIter = 4
+#eps_conv = 1e-4
+#timeSteps = np.arange(0., timeEnd, timeStep)
+#bladePitch = 2.
+#bladePitch1 = 8.
+#Blades, uInfty, deltaFlts = EllipticalWing(bladePitch)
+#centers = Blades[0].centers
+#liftDistribution = Blades[0].lift
+#
+#wake = Wake()
+#output = open('liftDistribution_elliptical_2.dat', 'w')
+#Blades1, uInfty1, deltaFlts1 = EllipticalWing(bladePitch1)
+#liftDistribution1 = Blades1[0].lift
+#liftDistributions = 0.
+#liftDistributions1 = 0.
+#
+#for (it, t) in enumerate(timeSteps):
+#    if t<10 :
+#        print('iteration, time, finaltime: ', it, t, timeSteps[-1])
+#        update(Blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv, 2)
+#        write_particles(outDir)
+#        write_blade(Blades, outDir)
+#        for i in range(len(centers)):
+#            liftDistributions += liftDistribution[i]
+#        liftDistributions = liftDistributions/(len(centers)+1)
+#        print('#########LIFTdIST :', liftDistributions)
+#        print('########Comparison :', liftDistribution[20])
+#        output.write(str(centers[20][1]) + ' ' + str(liftDistributions) + ' ' + str(t) + ' ' + str(
+#            np.degrees(Blades[0].attackAngle[20])) + '\n')
+#    else :
+#        update(Blades1, wake, uInfty1, timeStep, innerIter, deltaFlts1, eps_conv, 2)
+#        write_particles(outDir)
+#        write_blade(Blades1,outDir)
+#        for i in range(len(centers)):
+#            liftDistributions1 += liftDistribution1[i]
+#        liftDistributions1 = liftDistributions1/(len(centers)+1)
+#        output.write(str(centers[20][1]) + ' ' + str(liftDistributions1) + ' ' + str(t) + ' ' + str(
+#            np.degrees(Blades[0].attackAngle[20])) + '\n')
+##for i in range(len(centers)):
+#    #output.write(str(centers[20][1]) + ' ' + str(liftDistribution[20]) + ' ' + str(t) + ' ' + str(np.degrees(Blades[0].attackAngle[20]))+ '\n')
+#
 
-windTurbineCase = False
+
+
+
+#output.close()
+
+
+
+
+############ END Elliptical change of pitch case #############################
+
+
+
+
+
+
+
+windTurbineCase = True
+# Blades, WindTurbine, uInfty, deltaFlts = NewMexicoWindTurbine()  # EllipticalWing() #StraightWingCastor() #StraightBlade() #EllipticalWing()
 
 if(windTurbineCase == True):
     Blades, WindTurbine, uInfty, deltaFlts = NewMexicoWindTurbine()
@@ -225,8 +303,8 @@ if(windTurbineCase == True):
 
     timeSteps = np.arange(0., timeEnd, timeStep)
 else:
-    timeStep = 0.05
-    timeEnd = 50.
+    timeStep = 0.1
+    timeEnd = 10.
     innerIter = 4
     timeSteps = np.arange(0., timeEnd, timeStep)
     Blades, uInfty, deltaFlts = EllipticalWing()
@@ -243,7 +321,7 @@ for (it, t) in enumerate(timeSteps):
         WindTurbine.updateTurbine(refAzimuth)
 
     print('iteration, time, finaltime: ', it, t, timeSteps[-1])
-    update(Blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv)
+    update(Blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv, 3)
 
     write_particles(outDir)
     write_blade(Blades, outDir)
@@ -265,31 +343,29 @@ for (it, t) in enumerate(timeSteps):
                         WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
                 aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
             else:
+                output = open('liftDistribution.dat', 'w')
                 aoa_th = 0.
             output.write(str(np.linalg.norm(centers[i])) + ' ' + str(liftDistribution[i]) + ' ' + str(
                 np.degrees(Blades[0].attackAngle[i])) + ' ' + str(Blades[0].effectiveVelocity[i]) + '\n')
         output.close()
+    else :
+        output = open('liftDistribution_elliptical.dat', 'w')
+        centers = Blades[0].centers
+        liftDistribution = Blades[0].lift
+        for i in range(len(centers)):
+            output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
+        output.close()
 
-    print('Simulation time: ', time.time()-startTime)
 
-centers = Blades[0].centers
-liftDistribution = Blades[0].lift
 
-# output = open('liftDistribution.dat', 'w')
-# for i in range(len(centers)):
-#     if(windTurbineCase == True):
-#         TwistAndPitch = WindTurbine.bladePitch + .5 * (
-#                 WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
-#         aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
-#     else:
-#         aoa_th = 0.
-#     output.write(str(np.linalg.norm(centers[i])) + ' ' + str(liftDistribution[i]) + ' ' + str(
-#         np.degrees(Blades[0].attackAngle[i])) + ' ' + str(aoa_th) + '\n')
-# output.close()
-
-# if(windTurbineCase == True):
-#     Fn, Ft = WindTurbine.evaluateForces(1.191)
-#     output = open('bladeForces.dat', 'w')
-#     for i in range(len(centers)):
-#         output.write(str(centers[i][1]) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
-#     output.close()
+#centers = Blades[0].centers
+#liftDistribution = Blades[0].lift
+#
+#
+#
+## if(windTurbineCase == True):
+##     Fn, Ft = WindTurbine.evaluateForces(1.191)
+##     output = open('bladeForces.dat', 'w')
+##     for i in range(len(centers)):
+##         output.write(str(centers[i][1]) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
+##     output.close()
