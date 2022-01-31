@@ -1,11 +1,11 @@
 import os
 import numpy as np
+from scipy import interpolate
 
 from windTurbine import *
 from airfoil import *
 from blade import *
 from solver import *
-from scipy import interpolate
 
 # Post-processing directory
 # Create target directory & all intermediate directories if don't exists
