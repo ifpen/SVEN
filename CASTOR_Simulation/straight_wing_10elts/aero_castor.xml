@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CASTOR>
+
+  <!-- Choices for filaments core models:
+        - VanGarrel
+        - RamasamyLeishman
+  -->
+
+  <!-- Choices for particles core models:
+       - MooreRosenhead
+       - WinckelmansLeonard
+  -->
+
+  <!-- Choices for wake type:
+       - Free
+       - Prescribed
+  -->
+
+  <!-- Choices for platform:
+       - GPU
+       - CPU
+  -->
+
+  <!-- Choice of the wake_model:
+       - Filaments
+       - Particles - shed_length scales the transition from filaments to particles
+  -->
+
+  <MODEL name="LiftingLine" wake="Free" wake_model="CUDA_Thrust" particles_merging="Deactivated" filaments_core_model="VanGarrel" particles_core_model="MooreRosenhead" rotation="CLOCK" shed_length="2" length="360" platform="GPU" use_struts="No" type="HAWT"/>
+
+  <SECONDARY_EFFECT stall_model      = "None"
+                    tower_shadow     = "Deactivated"
+                    threeD_effects   = "None"
+  />
+
+  <FLUID density="1.195" viscosity="1.853e-5"/>
+
+  <WAKE_ACCOMODATION>
+    <!--<SHED_MERGER at_age="10"/>-->
+    <!--<SHED_MERGER at_age="20"/>-->
+    <!--<SHED_MERGER at_age="30"/>-->
+    <!--<SHED_MERGER at_age="50"/>-->
+  </WAKE_ACCOMODATION>
+
+
+  <WIND>
+    <WIND_3D ux="15.0" uy="0." uz="0.0"/>		
+  </WIND>
+  
+  <FARM_OUTPUTS status="Deactivated"/>
+
+  <SPANWISE_OUTPUTS status="Activated" format="asciiDAT" rotor="1" blade="1" nodes=""/>
+
+  <AERO_OUTPUTS format="asciiDAT_IFPEN">
+    <NODES_OUTPUTS status="Activated" rotor="1" blade="1" nodes=""/>
+  </AERO_OUTPUTS>
+
+  <X_LINES>
+  </X_LINES>
+
+  <Y_LINES>
+  </Y_LINES>
+
+  <WAKES_OUTPUTS      status="Activated" it_start="1"/>
+  <WAKE_FILES_OUTPUTS status="Activated" it_start="1"/>
+
+  <SURFACES>
+<!-- 	<GENERIC_PLANE id="1" x_min="0.0" x_max="0.0" y_min="-200" y_max="200" z_min="0.0" z_max="200" nb_x="1" nb_y="100" nb_z="100" x_origin="0.0" y_origin="0.0" z_origin="0.0" yaw_angle="0.0" it_start="1"/>  -->
+<!--    <Z_PLANE id="1" x_min="0" x_max="200" y_min="-150" y_max="150" z="89.885" nb_x="100" nb_y="100" it_start="1"/> -->
+  </SURFACES>
+
+
+  <BOXES>
+ <!--       <BOX id="1" x_min="0.0" x_max="35" y_min="-200" y_max="200" z_min="0.0" z_max="200" nb_x="15" nb_y="250" nb_z="250" it_start="36"/>-->
+  </BOXES>
+
+  <SENSORS>
+  </SENSORS>
+
+  <LIFTING_LINE_MODEL
+    max_iteration="40"
+    relaxation="0.2"
+  />
+
+  <!-- delta and delta_NW should take value between 0.01 and 0.03 (percentage of filament length)    -->
+  <!-- High value increase stability, but one should not exceed 0.03 otherwise tip is badly resolved -->
+  <VAN_GARREL_CORE_MODEL
+    scale_radius= "0.6"
+    delta       = "0.5"  
+    delta_NW    = "0.5"
+  />
+
+  <RAMASAMY_LEISHMAN_CORE_MODEL
+    scale_radius="0.2"
+    n_Vastisas  ="2.0"  
+  />
+
+  <MOORE_ROSENHEAD_CORE_MODEL
+    delta="0.15"
+  />
+
+  <WINCKELMANS_LEONARD_CORE_MODEL
+    delta="0.00035"
+  />
+
+</CASTOR>
+
