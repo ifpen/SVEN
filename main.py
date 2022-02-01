@@ -321,7 +321,7 @@ for (it, t) in enumerate(timeSteps):
         WindTurbine.updateTurbine(refAzimuth)
 
     print('iteration, time, finaltime: ', it, t, timeSteps[-1])
-    update(Blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv, 2)
+    update(Blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv, 1)
 
     write_particles(outDir)
     write_blade(Blades, outDir)

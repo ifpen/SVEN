@@ -307,13 +307,13 @@ def nearWakeInduction(blades, deltaFlts):
         rightNodes = np.concatenate((rightNodes, bladeRightNodes))
         circulations = np.concatenate((circulations, bladeCirculations))
 
-    allBladeInductions = []
-    for blade in blades:
-        inducedVelocity = np.zeros([len(blade.centers), 3])
-        for i in range(len(blade.centers)):
-            inducedVelocity[i, :] = biotSavartFilaments(blade.centers[i], leftNodes, rightNodes, circulations,
+    allBladeInductions = np.zeros((len(blades), len(blade.centers), 3))
+    for (iblade,blade) in enumerate(blades):
+        # inducedVelocity = np.zeros([len(blade.centers), 3])
+        # for i in range(len(blade.centers)):
+        allBladeInductions[iblade, :, :] = biotSavartFilaments_v3(blade.centers, leftNodes, rightNodes, circulations,
                                                         deltaFlts)
-        allBladeInductions.append(inducedVelocity)
+        # allBladeInductions.append(inducedVelocity)
 
     return allBladeInductions
 
