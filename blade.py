@@ -39,7 +39,6 @@ class Blade:
     def storeOldGammaBound(self, gammas):
         for i in range(len(self.centers)):
             self.oldGammaBound[i] = gammas[i]
-        # print(self.gammaBound, self.oldGammaBound, self.gammaBound-self.oldGammaBound)
         return
 
     def updateSheds(self, newGammaBound):
@@ -82,60 +81,57 @@ class Blade:
         relax = 0.25
 
         newGammaBounds = np.zeros(len(self.centers))
+        newGamma = np.zeros(len(self.centers))
 
         uWind = np.zeros(3)
         uWind[0] = uInfty
 
-        # Project to blade element reference frame
+        uEffective = uWind - self.centersTranslationVelocity + nearWakeInducedVelocities + \
+                     self.inductionsFromWake
+
+        r = R.from_matrix(self.centersOrientationMatrix)
+        uEffectiveInElementRef = r.apply(uEffective, inverse=True)
+
+        # 2D assumption
+        uEffectiveInElementRef[:, 1] = 0.
+        self.attackAngle = np.arctan2(uEffectiveInElementRef[:, 2], uEffectiveInElementRef[:, 0])
+
+        # I could get rid of this for loop yet...
         for i in range(len(self.centers)):
-            uEffective = uWind - self.centersTranslationVelocity[i] + nearWakeInducedVelocities[i] + \
-                         self.inductionsFromWake[i]
-            #
-            r = R.from_matrix(self.centersOrientationMatrix[i])
-            uEffectiveInElementRef = r.apply(uEffective, inverse=True)
-
-            # 2D assumption
-            uEffectiveInElementRef[1] = 0.
-            self.attackAngle[i] = np.arctan2(uEffectiveInElementRef[2], uEffectiveInElementRef[0])
             self.lift[i] = self.airfoils[i].getLift(self.attackAngle[i])
-            self.effectiveVelocity[i] = np.linalg.norm(uEffectiveInElementRef)
 
-            newGamma = .5 * np.linalg.norm(uEffectiveInElementRef) * self.centerChords[i] * self.lift[i]
-            newGammaBounds[i] = self.gammaBound[i] + relax * (newGamma - self.gammaBound[i])
+        self.effectiveVelocity = np.linalg.norm(uEffectiveInElementRef, axis=1)
 
-            if (self.gammaBound[i] == 0):
-                newGammaBounds[i] = newGamma
-            self.gammaBound[i] = newGammaBounds[i]
+        newGamma = .5 * self.effectiveVelocity * self.centerChords * self.lift
+        newGammaBounds = self.gammaBound + relax * (newGamma - self.gammaBound)
+
+        idx = np.where(self.gammaBound == 0)
+        newGammaBounds[idx] = newGamma[idx]
+
+        self.gammaBound = newGammaBounds
 
         return newGammaBounds
 
     def getNodesAndCirculations(self, includeBoundFilaments):
-        leftNodes = []
-        rightNodes = []
-        circulations = []
 
-        # Trail filaments first
-        for i in range(len(self.bladeNodes)):
-            leftNodes.append(self.bladeNodes[i])
-            rightNodes.append(self.trailingEdgeNode[i])
-            circulations.append(self.gammaTrail[i])
+        length = len(self.bladeNodes) + len(self.centers)
+        if(includeBoundFilaments == True):
+            length += len(self.centers)
 
-        # Then shed filaments
-        for i in range(len(self.centers)):
-            leftNodes.append(self.trailingEdgeNode[i])
-            rightNodes.append(self.trailingEdgeNode[i + 1])
-            circulations.append(self.gammaShed[i])
+        leftNodes = np.zeros((length,3))
+        leftNodes[:len(self.bladeNodes),:] = self.bladeNodes[:,:]
+        leftNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = self.trailingEdgeNode[0:-1,:]
+        leftNodes[len(self.bladeNodes)+len(self.centers):,:] = self.bladeNodes[0:-1,:]
 
-        # Maybe bound filaments also need to be considered here
-        if (includeBoundFilaments):
-            for i in range(len(self.centers)):
-                leftNodes.append(self.bladeNodes[i])
-                rightNodes.append(self.bladeNodes[i + 1])
-                circulations.append(self.newGammaBound[i])
+        rightNodes = np.zeros((length,3))
+        rightNodes[:len(self.bladeNodes),:] = self.trailingEdgeNode[:,:]
+        rightNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = self.trailingEdgeNode[1:]
+        rightNodes[len(self.bladeNodes)+len(self.centers):,:] = self.bladeNodes[1:]
 
-        leftNodes = np.asarray(leftNodes)
-        rightNodes = np.asarray(rightNodes)
-        circulations = np.asarray(circulations)
+        circulations = np.zeros(length)
+        circulations[:len(self.bladeNodes)] = self.gammaTrail
+        circulations[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers)] = self.gammaShed
+        circulations[len(self.bladeNodes)+len(self.centers):] = self.newGammaBound
 
         return leftNodes, rightNodes, circulations
 

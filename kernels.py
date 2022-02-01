@@ -70,8 +70,8 @@ __global__ void particlesOnBladesKernel(float *destUx, float *destUy, float *des
   //Get thread's global index
   int idx = blockDim.x * blockIdx.x + threadIdx.x;
   //const int idx = threadIdx.x;
-  float PI = 3.14159265358979323846;
-  float   fPI  = 4. * PI;
+  //float PI = 3.14159265358979323846;
+  //float   fPI  = 4. * PI;
   //int numParticles = inputParticles[0];
   // Check point index
   if(idx<numParticles){
@@ -114,9 +114,9 @@ __global__ void particlesOnBladesKernel(float *destUx, float *destUy, float *des
         //destUx[k] -= cross_x / fPI;
         //destUy[k] -= cross_y / fPI;
         //destUz[k] -= cross_z / fPI;
-        atomicAdd(&destUx[k], -cross_x / fPI);
-        atomicAdd(&destUy[k], -cross_y / fPI);
-        atomicAdd(&destUz[k], -cross_z / fPI); 
+        atomicAdd(&destUx[k], -cross_x );
+        atomicAdd(&destUy[k], -cross_y );
+        atomicAdd(&destUz[k], -cross_z ); 
     }
   }
 }
@@ -193,10 +193,6 @@ __global__ void particlesOnParticlesKernel(float *destUx, float *destUy, float *
 {
   //Get thread's global index
   int idx = blockDim.x * blockIdx.x + threadIdx.x;
-  //const int idx = threadIdx.x;
-  float   PI = 3.14159265358979323846;
-  float   fPI  = 4. * PI;
-  //int numParticles = inputParticles[0];
 
   // Check point index
   if(idx<numParticles){
@@ -212,7 +208,6 @@ __global__ void particlesOnParticlesKernel(float *destUx, float *destUy, float *
     // Loop over all source particles
     for(int k=0; k < numParticles; k++)
     {
-      //if(idx != k){
           //global  mem fetches coalesced acces?
           curr_xp_x = positionX[k];
           curr_xp_y = positionY[k];
@@ -239,18 +234,17 @@ __global__ void particlesOnParticlesKernel(float *destUx, float *destUy, float *
           float d = norm*norm + epsilon*epsilon;
           float cst  = 1. / (d*sqrt(d));
 
-          float numer_x		= cst * x_min_xp_x;
-          float numer_y		= cst * x_min_xp_y;
-          float numer_z		= cst * x_min_xp_z;
+          //float numer_x		= cst * x_min_xp_x;
+          //float numer_y		= cst * x_min_xp_y;
+          //float numer_z		= cst * x_min_xp_z;
 
+          //float cross_x		= x_min_xp_y*curr_vp_z - x_min_xp_z*curr_vp_y;
+          //float cross_y		= x_min_xp_z*curr_vp_x - x_min_xp_x*curr_vp_z;
+          //float cross_z		= x_min_xp_x*curr_vp_y - x_min_xp_y*curr_vp_x;
 
-          float cross_x		= numer_y*curr_vp_z - numer_z*curr_vp_y;
-          float cross_y		= numer_z*curr_vp_x - numer_x*curr_vp_z;
-          float cross_z		= numer_x*curr_vp_y - numer_y*curr_vp_x;
-
-          destUx[idx] -= cross_x / fPI;
-          destUy[idx] -= cross_y / fPI;
-          destUz[idx] -= cross_z / fPI;
+          destUx[idx] -= cst * (x_min_xp_y*curr_vp_z - x_min_xp_z*curr_vp_y);
+          destUy[idx] -= cst * (x_min_xp_z*curr_vp_x - x_min_xp_x*curr_vp_z);
+          destUz[idx] -= cst * (x_min_xp_x*curr_vp_y - x_min_xp_y*curr_vp_x);
       //}
     }
   }

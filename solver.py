@@ -125,12 +125,10 @@ def update(blades, wake, uInfty, timeStep, innerIter, deltaFlts, eps_conv, parti
 
     # Now that we are converged, set the new values
     for (iBlade, blade) in enumerate(blades):
-        # blade.oldGammaBound = blade.gammaBound #bladesGammaBounds[iBlade]
         blade.storeOldGammaBound(bladesGammaBounds[iBlade])
-        #blade.gammaBound = np.zeros(len(bladesGammaBounds[iBlade]))
 
     t1 = time.time()
-    print('gamamaBoundUpdate: ', t1 - t0, biotTime)
+    print('gammaBoundUpdate: ', t1 - t0, biotTime)
 
     # Advect the wake ##############################################################
     t0 = time.time()
@@ -202,14 +200,14 @@ def wakeInductionsOnBlade(blade, wake):
         block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
 
     for i in range(len(blade.centers)):
-        blade.inductionsFromWake[i, 0] = destUx[i]
-        blade.inductionsFromWake[i, 1] = destUy[i]
-        blade.inductionsFromWake[i, 2] = destUz[i]
+        blade.inductionsFromWake[i, 0] = destUx[i] / (4.*np.pi)
+        blade.inductionsFromWake[i, 1] = destUy[i] / (4.*np.pi)
+        blade.inductionsFromWake[i, 2] = destUz[i] / (4.*np.pi)
 
     for i in range(len(blade.bladeNodes)):
-        blade.inductionsAtNodes[i, 0] = destUx[i + len(blade.centers)]
-        blade.inductionsAtNodes[i, 1] = destUy[i + len(blade.centers)]
-        blade.inductionsAtNodes[i, 2] = destUz[i + len(blade.centers)]
+        blade.inductionsAtNodes[i, 0] = destUx[i + len(blade.centers)] / (4.*np.pi)
+        blade.inductionsAtNodes[i, 1] = destUy[i + len(blade.centers)] / (4.*np.pi)
+        blade.inductionsAtNodes[i, 2] = destUz[i + len(blade.centers)] / (4.*np.pi)
 
     return
 
@@ -290,9 +288,9 @@ def wakeInductionsOnWake(wake):
             drv.In(ptclesVorZ), drv.In(ptclesRad), numParticles,
             block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
 
-        wake.inducedVelocities[:, 0] = destUx[:]
-        wake.inducedVelocities[:, 1] = destUy[:]
-        wake.inducedVelocities[:, 2] = destUz[:]
+        wake.inducedVelocities[:, 0] = destUx[:] / (4.*np.pi)
+        wake.inducedVelocities[:, 1] = destUy[:] / (4.*np.pi)
+        wake.inducedVelocities[:, 2] = destUz[:] / (4.*np.pi)
 
     return
 
@@ -305,7 +303,6 @@ def nearWakeInduction(blades, deltaFlts):
     circulations = np.zeros(0)
     for blade in blades:
         bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getNodesAndCirculations(useBoundFilaments)
-        # bladeLeftNodes, bladeRightNodes, bladeCirculations, bladeFilamentLength = blade.getFilamentsInfo(uInfty, tStep)
         leftNodes = np.concatenate((leftNodes, bladeLeftNodes))
         rightNodes = np.concatenate((rightNodes, bladeRightNodes))
         circulations = np.concatenate((circulations, bladeCirculations))
