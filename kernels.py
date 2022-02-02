@@ -84,14 +84,14 @@ def biotSavartFilaments_v2(evaluationPoints, leftNodes, rightNodes, circulations
 
     return inducedVelocities
 
-@njit(parallel=True)
+@njit() #parallel=True)
 def biotSavartFilaments_v3(evaluationPoints, leftNodes, rightNodes, circulations):
     #
     length = np.int(len(evaluationPoints))
     #
     inducedVelocities = np.zeros((len(evaluationPoints), 3))
     #
-    for i in prange(evaluationPoints.shape[0]):
+    for i in range(evaluationPoints.shape[0]):
         #
         inducedVelocity = np.zeros(3)
         cross = np.zeros((len(circulations), 3))
