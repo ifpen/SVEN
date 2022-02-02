@@ -1,4 +1,4 @@
-from numba import jit
+from numba import jit, njit, prange
 import numpy as np
 
 import pycuda.autoinit
@@ -84,14 +84,17 @@ def biotSavartFilaments_v2(evaluationPoints, leftNodes, rightNodes, circulations
 
     return inducedVelocities
 
-
-@jit(nopython=True, fastmath=True)
-def biotSavartFilaments_v3(evaluationPoints, leftNodes, rightNodes, circulations, deltaFlts):
+@njit(parallel=True)
+def biotSavartFilaments_v3(evaluationPoints, leftNodes, rightNodes, circulations):
     #
-    inducedVelocity = np.zeros(3)
-    cross = np.zeros((len(circulations), 3))
-    inducedVelocities = np.zeros((len(evaluationPoints),3))
-    for i in range(len(evaluationPoints)):
+    length = np.int(len(evaluationPoints))
+    #
+    inducedVelocities = np.zeros((len(evaluationPoints), 3))
+    #
+    for i in prange(evaluationPoints.shape[0]):
+        #
+        inducedVelocity = np.zeros(3)
+        cross = np.zeros((len(circulations), 3))
         #
         p1 = evaluationPoints[i] - leftNodes
         p2 = evaluationPoints[i] - rightNodes
@@ -100,7 +103,7 @@ def biotSavartFilaments_v3(evaluationPoints, leftNodes, rightNodes, circulations
         #
         # Numba does not support aaxis and baxis
         for k in range(len(circulations)):
-            cross[k,:] = np.cross(p1[k],p2[k])
+           cross[k,:] = np.cross(p1[k],p2[k])
 
         inducedVelocity[0] = np.sum(ubar * cross[:,0])
         inducedVelocity[1] = np.sum(ubar * cross[:,1])
