@@ -3,8 +3,10 @@ from scipy.spatial.transform import Rotation as R
 
 
 class Blade:
-    def __init__(self, nodes, nodeChords, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
+    def __init__(self, nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
                  centersTranslationVelocity, nodesTranslationVelocity):
+
+        self.nearWakeLength = nearWakeLength
 
         self.gammaBound = np.zeros(len(nodes) - 1)
         self.newGammaBound = np.zeros(len(nodes) - 1)
@@ -34,12 +36,52 @@ class Blade:
         self.lift = np.zeros((len(self.centers)))
         self.effectiveVelocity = np.zeros((len(self.centers)))
 
+        self.wakeNodesInductions = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
+        self.trailFilamentsCirculation = np.zeros([len(self.bladeNodes), self.nearWakeLength-1])
+        self.shedFilamentsCirculation = np.zeros([len(self.bladeNodes)-1, self.nearWakeLength])
+
+        self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
+
+        # self.updateFirstWakeRow()
+
+        return
+
+    def initializeWake(self):
+        # Near-wake filaments
+        # self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
+        for i in range(self.nearWakeLength):
+            for j in range(len(self.bladeNodes)):
+                self.wakeNodes[j,i,:] = self.trailingEdgeNode[j,:] + np.asarray([float(i+1) * 0.1,0.,0.]) #self.trailingEdgeNode[j] + np.asarray([float(i) * 0.1,0.,0.])
+        return
+
+    def updateFilamentCirulations(self):
+        self.trailFilamentsCirculation[:,0] = self.gammaTrail
+        self.shedFilamentsCirculation[:,0] = self.gammaShed
+        return
+
+    def spliceNearWake(self):
+        self.wakeNodes[:,1:] = self.wakeNodes[:,:-1]
+        self.trailFilamentsCirculation[:,1:] = self.trailFilamentsCirculation[:,:-1]
+        self.shedFilamentsCirculation[:, 1:] = self.shedFilamentsCirculation[:, :-1]
+
+        self.trailFilamentsCirculation[:,0] = 0.
+        self.shedFilamentsCirculation[:,0] = 0.
+
+        return
+
+    def advectFilaments(self, uInfty, timeStep):
+
+        wind = np.zeros(3)
+        wind[0] = uInfty
+
+        self.wakeNodes += wind*timeStep + self.wakeNodesInductions*timeStep
+        # print('nodes inductions: ', self.wakeNodesInductions)
+        # input()
         return
 
     def storeOldGammaBound(self, gammas):
         for i in range(len(self.centers)):
             self.oldGammaBound[i] = gammas[i]
-        # print(self.gammaBound, self.oldGammaBound, self.gammaBound-self.oldGammaBound)
         return
 
     def updateSheds(self, newGammaBound):
@@ -63,6 +105,8 @@ class Blade:
             dist_to_TE = r.apply(dist_to_TE, inverse=False)
 
             self.trailingEdgeNode[i] = self.bladeNodes[i] + dist_to_TE
+
+        self.wakeNodes[:,0,:] = self.trailingEdgeNode
 
         return
 
@@ -167,6 +211,25 @@ class Blade:
 
         leftNodes = np.asarray(leftNodes)
         rightNodes = np.asarray(rightNodes)
+        circulations = np.asarray(circulations)
+
+        return leftNodes, rightNodes, circulations
+
+    def getLastFilamentsInfo(self, uInftyX, tStep):
+
+        leftNodes = self.wakeNodes[:,-2]
+        rightNodes = self.wakeNodes[:,-1]
+        circs = self.trailFilamentsCirculation[:,-1]
+        circulations = []
+        for c in circs:
+            circulations.append(c)
+
+        leftNodes = np.concatenate((leftNodes, self.wakeNodes[:-1,-1]), axis=0)
+        rightNodes = np.concatenate((rightNodes, self.wakeNodes[1:,-1]), axis=0)
+        circs = self.shedFilamentsCirculation[:,-1]
+        for c in circs:
+            circulations.append(c)
+
         circulations = np.asarray(circulations)
 
         return leftNodes, rightNodes, circulations

@@ -114,7 +114,7 @@ class windTurbine:
 
         return self.blades
 
-    def initializeTurbine(self, nodesRadius, nodesChord, centersAirfoils, nodesTwistAngles, nBlades):
+    def initializeTurbine(self, nodesRadius, nodesChord, nearWakeLength, centersAirfoils, nodesTwistAngles, nBlades):
 
         self.nodesRadius = nodesRadius
         self.nodesChord = nodesChord
@@ -124,11 +124,14 @@ class windTurbine:
 
         nbNodes = len(nodesRadius)
         for ib in range(nBlades):
-            self.blades.append( Blade(np.zeros([nbNodes,3]), nodesChord, centersAirfoils, np.zeros(nbNodes), np.zeros(nbNodes),
+            self.blades.append( Blade(np.zeros([nbNodes,3]), nodesChord, nearWakeLength, centersAirfoils, np.zeros(nbNodes), np.zeros(nbNodes),
                   np.zeros(nbNodes), np.zeros(nbNodes)))
             self.blades[ib].centerChords = .5 * (self.blades[ib].nodeChords[1:] + self.blades[ib].nodeChords[:-1])
 
         blades = self.updateTurbine(0.)
+
+        for blade in blades:
+            blade.initializeWake()
 
         return blades
 

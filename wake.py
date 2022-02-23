@@ -25,8 +25,11 @@ def addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particles
 
             filamentLength = np.linalg.norm(rightNodes[i] - leftNodes[i])
             unitVector = (rightNodes[i] - leftNodes[i]) / filamentLength
-            particleRadius = .5 * filamentLength
+            particleRadius = .55 * filamentLength / particlesPerFil
+            # particleRadius = .5 * filamentLength
             particleVorticity = circulations[i] * filamentLength * unitVector / particlesPerFil
+
+            # print('Gamma, Length, Vorticity: ', circulations[i], filamentLength, particleVorticity)
 
             newPosX[ptclesCounter] = particlePosition[0]
             newPosY[ptclesCounter] = particlePosition[1]
@@ -114,6 +117,9 @@ class Wake:
         #
         #         ptclesCounter += 1
 
+        # print(np.shape(leftNodes), np.shape(rightNodes), np.shape(circulations))
+        # for i in range(len(circulations)):
+            # print('left, right, circ: ', leftNodes[i], rightNodes[i], circulations[i])
         newPosX, newPosY, newPosZ, newVorX, newVorY, newVorZ, newRadius = addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particlesPerFil)
 
         self.particlesPositionX = np.concatenate((self.particlesPositionX, newPosX), axis=0)
