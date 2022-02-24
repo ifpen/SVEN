@@ -12,7 +12,7 @@ from matplotlib import rc
 
 #span = 2.04
 
-CL_vortex = np.loadtxt('liftDistribution.dat')
+CL_vortex = np.loadtxt('liftDistribution_elliptical.dat')
 #CL_castor = np.genfromtxt('rotor_1_blade_1_span_Flts.dat', skip_header=1)
 #castor = CL_castor[-34:, :]
 

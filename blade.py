@@ -63,6 +63,8 @@ class Blade:
         self.wakeNodes[:,1:] = self.wakeNodes[:,:-1]
         self.trailFilamentsCirculation[:,1:] = self.trailFilamentsCirculation[:,:-1]
         self.shedFilamentsCirculation[:, 1:] = self.shedFilamentsCirculation[:, :-1]
+        # print('trailFilamentCIrculation :', self.trailFilamentsCirculation)
+        # print('shedFilamentCirculation :', self.shedFilamentsCirculation)
 
         self.trailFilamentsCirculation[:,0] = 0.
         self.shedFilamentsCirculation[:,0] = 0.
@@ -76,7 +78,6 @@ class Blade:
 
         self.wakeNodes += wind*timeStep + self.wakeNodesInductions*timeStep
         # print('nodes inductions: ', self.wakeNodesInductions)
-        # input()
         return
 
     def storeOldGammaBound(self, gammas):

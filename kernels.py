@@ -398,7 +398,7 @@ __global__ void bladeOnParticlesKernel(float *destUx, float *destUy, float *dest
         float   den  = r1tr2*(r1tr2 + r1dr2) + fd*fd;
         //
         float ubar = 0.;
-        if(abs(den) > 1e-8){
+        if(abs(den) > 1e-15){
             ubar  = fstr / (4. * PI)*(r1 + r2) / den;
         }
         destUx[idx] += ubar * (pyy1*pzz2-pzz1*pyy2);

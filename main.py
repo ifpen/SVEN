@@ -19,11 +19,11 @@ else:
 def NewMexicoWindTurbine():
     sign = -1.
     hubRadius = 0.210
-    nBlades = 1
+    nBlades = 3
     rotationalVelocity = 44.5163679
     windVelocity = 15.06 #10.05 #15.06
     bladePitch = sign * 0.040143
-    nearWakeLength = 0
+    nearWakeLength = 359
 
     dataAirfoils = np.genfromtxt('turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
                                  dtype='U')
@@ -31,7 +31,7 @@ def NewMexicoWindTurbine():
 
     data = np.genfromtxt('turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
 
-    refRadius = np.linspace(0., 2.04, 10) # data[:,2]
+    refRadius = data[:,2] #np.linspace(0., 2.04, 45) # data[:,2]
 
     # Radius start at blade root, not hub center!
     inputNodesTwistAngles = -sign * np.radians(data[:, 5])
@@ -52,7 +52,7 @@ def NewMexicoWindTurbine():
     myWT = windTurbine(nBlades, hubCenter, hubRadius, rotationalVelocity, windVelocity, bladePitch)
     blades = myWT.initializeTurbine(nodesRadius, nodesChord, nearWakeLength, centersAirfoils, nodesTwistAngles, myWT.nBlades)
 
-    return blades, myWT, windVelocity, 0.1, 1e-4
+    return blades, myWT, windVelocity, 0.01, 1e-4
 
 
 def StraightBlade():
@@ -143,8 +143,8 @@ def StraightWingCastor():
 
 def EllipticalWing(bladePitch):
     # Blade discretisation
-    nBladeCenters = 50
-    nearWakeLength = 99
+    nBladeCenters = 10
+    nearWakeLength = 10
 
     AR = 6.
     bladeLength = 10.
@@ -175,12 +175,18 @@ def EllipticalWing(bladePitch):
 
     liftingLine1 = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
                          np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
+    liftingLine2 = Blade(nodes+[0., 0., 10.], nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
+                         np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
 
     liftingLine1.updateFirstWakeRow()
     liftingLine1.initializeWake()
 
+    liftingLine2.updateFirstWakeRow()
+    liftingLine2.initializeWake()
+
     Blades = []
     Blades.append(liftingLine1)
+    Blades.append(liftingLine2)
 
     deltaFlts = np.sqrt(1e-2)
 
@@ -220,6 +226,22 @@ def write_filaments(blades, outDir):
 
     return
 
+def write_filaments_tp(blades, outDir):
+
+    for (iBlade, blade) in enumerate(blades):
+        shape = np.shape(blade.wakeNodes)
+
+        output = open(outDir + '/Filaments_Nodes_' + '_Blade_'+str(iBlade)+'_tStep_'+str(it)+'.tp', 'w')
+        output.write('TITLE="Near-wake nodes"\n')
+        output.write('VARIABLES="X" "Y" "Z"\n')
+        output.write('ZONE T="Near-wake" I='+str(shape[0])+' J='+str(shape[1])+', K=1, DT=(SINGLE SINGLE SINGLE)\n')
+        for j in range(np.shape(blade.wakeNodes)[1]):
+            for i in range(np.shape(blade.wakeNodes)[0]):
+                output.write(str(blade.wakeNodes[i,j,0]) + " " + str(blade.wakeNodes[i,j,1]) + " " + str(blade.wakeNodes[i,j,2]) + "\n")
+        output.close()
+
+    return
+
 def write_blade(blades, outDir):
     for (i, blade) in enumerate(blades):
 
@@ -230,6 +252,22 @@ def write_blade(blades, outDir):
         for i in range(len(blade.trailingEdgeNode)):
             output.write(str(blade.trailingEdgeNode[i][0]) + " " + str(blade.trailingEdgeNode[i][1]) + " " + str(
                 blade.trailingEdgeNode[i][2]) + " 0.0\n")
+        output.close()
+    return
+
+def write_blade_tp(blades, outDir):
+
+    for (iBlade, blade) in enumerate(blades):
+        shape = len(blade.bladeNodes)
+
+        output = open(outDir + '/Blade_'+str(iBlade)+'_Nodes_tStep_'+str(it)+'.tp', 'w')
+        output.write('TITLE="Near-wake nodes"\n')
+        output.write('VARIABLES="X" "Y" "Z"\n')
+        output.write('ZONE T="Near-wake" I='+str(shape)+' J='+str(2)+', K=1, DT=(SINGLE SINGLE SINGLE)\n')
+        for i in range(shape):
+                output.write(str(blade.bladeNodes[i,0]) + " " + str(blade.bladeNodes[i,1]) + " " + str(blade.bladeNodes[i,2]) + "\n")
+        for i in range(shape):
+                output.write(str(blade.trailingEdgeNode[i,0]) + " " + str(blade.trailingEdgeNode[i,1]) + " " + str(blade.trailingEdgeNode[i,2]) + "\n")
         output.close()
     return
 
@@ -296,7 +334,7 @@ def write_blade(blades, outDir):
 
 
 
-windTurbineCase = False
+windTurbineCase = True
 # Blades, WindTurbine, uInfty, deltaFlts = NewMexicoWindTurbine()  # EllipticalWing() #StraightWingCastor() #StraightBlade() #EllipticalWing()
 
 if(windTurbineCase == True):
@@ -340,14 +378,15 @@ for (it, t) in enumerate(timeSteps):
     update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
 
     write_particles(outDir)
-    write_blade(Blades, outDir)
+    write_blade_tp(Blades, outDir)
     write_filaments(Blades, outDir)
+    write_filaments_tp(Blades, outDir)
 
     if (windTurbineCase == True):
         centers = Blades[0].centers
 
         Fn, Ft = WindTurbine.evaluateForces(1.191) #(1.197)
-        output = open('bladeForces.dat', 'w')
+        output = open('bladeForces_'+str(it)+'.dat', 'w')
         for i in range(len(centers)):
             output.write(str(np.linalg.norm(centers[i])) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
         output.close()

@@ -131,6 +131,7 @@ class windTurbine:
         blades = self.updateTurbine(0.)
 
         for blade in blades:
+            blade.updateFirstWakeRow()
             blade.initializeWake()
 
         return blades

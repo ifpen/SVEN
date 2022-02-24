@@ -161,7 +161,7 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
     if(nearWakeLength > 2):
         for blade in blades:
             blade.spliceNearWake()
-        blade.updateFilamentCirulations()
+            blade.updateFilamentCirulations()
 
     ################################################################################
     print('Full iteration time: ', time.time() - iterationTime)
@@ -327,26 +327,13 @@ def nearWakeInduction(blades, deltaFlts):
         rightNodes = np.concatenate((rightNodes, bladeRightNodes))
         circulations = np.concatenate((circulations, bladeCirculations))
 
-    # allBladeInductions = []
-    # for blade in blades:
-    #     inducedVelocity = np.zeros([len(blade.centers), 3])
-    #     for i in range(len(blade.centers)):
-    #         inducedVelocity[i, :] = biotSavartFilaments(blade.centers[i], leftNodes, rightNodes, circulations,
-    #                                                     deltaFlts)
-    #     allBladeInductions.append(inducedVelocity)
-    #
-
     for (iblade,blade) in enumerate(blades):
-       # allBladeInductions[iblade, :, :] = biotSavartFilaments_v3(blade.centers, leftNodes, rightNodes, circulations)
         allBladeInductions[iblade, :, :] = biotSavartFilaments_v4(blade.centers, leftNodes, rightNodes, circulations, deltaFlts)
-    #biotSavartFilaments_v4(centers, left, right, circ)
 
     return allBladeInductions
 
 
 def bladeInductionsOnWake(blades, wake, deltaFlts):
-
-    # if (len(wake.particlesRadius) > 0):
 
     # useBoundFilaments = False
     useBoundFilaments = True
@@ -419,14 +406,14 @@ def bladeInductionsOnWake(blades, wake, deltaFlts):
     filamentsInductionsUy = destUy[:fltsNodesSize]
     filamentsInductionsUz = destUz[:fltsNodesSize]
 
-    shape = (len(blade.trailFilamentsCirculation), blade.nearWakeLength)
+    shape = (len(blades),len(blade.trailFilamentsCirculation), blade.nearWakeLength)
     filamentsInductionsUx = np.reshape(filamentsInductionsUx, shape)
     filamentsInductionsUy = np.reshape(filamentsInductionsUy, shape)
     filamentsInductionsUz = np.reshape(filamentsInductionsUz, shape)
-    for blade in blades:
-        blade.wakeNodesInductions[:,:,0] += filamentsInductionsUx
-        blade.wakeNodesInductions[:,:,1] += filamentsInductionsUy
-        blade.wakeNodesInductions[:,:,2] += filamentsInductionsUz
+    for (iBlade,blade) in enumerate(blades):
+        blade.wakeNodesInductions[:,:,0] += filamentsInductionsUx[iBlade,:,:]
+        blade.wakeNodesInductions[:,:,1] += filamentsInductionsUy[iBlade,:,:]
+        blade.wakeNodesInductions[:,:,2] += filamentsInductionsUz[iBlade,:,:]
 
     particlesInductionsUx = destUx[fltsNodesSize:]
     particlesInductionsUy = destUy[fltsNodesSize:]
@@ -559,24 +546,25 @@ def nearWakeInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
 
 
             if(bladeOrWake == "blade"):
-                for i in range(len(blade.centers)):
-                    blade.inductionsFromWake[i, 0] += destUx[i] #/ (4. * np.pi)
-                    blade.inductionsFromWake[i, 1] += destUy[i] #/ (4. * np.pi)
-                    blade.inductionsFromWake[i, 2] += destUz[i] #/ (4. * np.pi)
+                for blade in blades:
+                    for i in range(len(blade.centers)):
+                        blade.inductionsFromWake[i, 0] += destUx[i] #/ (4. * np.pi)
+                        blade.inductionsFromWake[i, 1] += destUy[i] #/ (4. * np.pi)
+                        blade.inductionsFromWake[i, 2] += destUz[i] #/ (4. * np.pi)
 
-                for i in range(len(blade.bladeNodes)):
-                    blade.inductionsAtNodes[i, 0] += destUx[i + len(blade.centers)] #/ (4. * np.pi)
-                    blade.inductionsAtNodes[i, 1] += destUy[i + len(blade.centers)] #/ (4. * np.pi)
-                    blade.inductionsAtNodes[i, 2] += destUz[i + len(blade.centers)] #/ (4. * np.pi)
+                    for i in range(len(blade.bladeNodes)):
+                        blade.inductionsAtNodes[i, 0] += destUx[i + len(blade.centers)] #/ (4. * np.pi)
+                        blade.inductionsAtNodes[i, 1] += destUy[i + len(blade.centers)] #/ (4. * np.pi)
+                        blade.inductionsAtNodes[i, 2] += destUz[i + len(blade.centers)] #/ (4. * np.pi)
 
             else:
-                shape = (len(blade.trailFilamentsCirculation), blade.nearWakeLength)  # np.shape(blade.wakeNodesInductions[:,:])
+                shape = (len(blades), len(blade.trailFilamentsCirculation), blade.nearWakeLength)  # np.shape(blade.wakeNodesInductions[:,:])
                 inducedVelX = np.reshape(destUx, shape)
                 inducedVelY = np.reshape(destUy, shape)
                 inducedVelZ = np.reshape(destUz, shape)
-                for (iBlade, blade) in enumerate(blades):
-                    blade.wakeNodesInductions[:, :, 0] += inducedVelX[:, :]
-                    blade.wakeNodesInductions[:, :, 1] += inducedVelY[:, :]
-                    blade.wakeNodesInductions[:, :, 2] += inducedVelZ[:, :]
+                for (iBlade, myBlade) in enumerate(blades):
+                    myBlade.wakeNodesInductions[:, :, 0] += inducedVelX[iBlade, :, :]
+                    myBlade.wakeNodesInductions[:, :, 1] += inducedVelY[iBlade, :, :]
+                    myBlade.wakeNodesInductions[:, :, 2] += inducedVelZ[iBlade, :, :]
 
     return
