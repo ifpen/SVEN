@@ -96,10 +96,10 @@ class windTurbine:
 
             nodes = np.asarray(nodes)
             self.blades[iBlade].bladeNodes = nodes
-            self.blades[iBlade].centersTranslationVelocity = centersTranslationVelocity
-            self.blades[iBlade].nodesTranslationVelocity = nodesTranslationVelocity
-            self.blades[iBlade].nodesOrientationMatrix = nodesOrientationMatrix
-            self.blades[iBlade].centersOrientationMatrix = centersOrientationMatrix
+            self.blades[iBlade].centersTranslationVelocity = np.asarray(centersTranslationVelocity, dtype=np.float32)
+            self.blades[iBlade].nodesTranslationVelocity = np.asarray(nodesTranslationVelocity, dtype=np.float32)
+            self.blades[iBlade].nodesOrientationMatrix = np.asarray(nodesOrientationMatrix, dtype=np.float32)
+            self.blades[iBlade].centersOrientationMatrix = np.asarray(centersOrientationMatrix, dtype=np.float32)
             self.blades[iBlade].centers = .5 * (nodes[1:] + nodes[:-1])
             # self.nodeChords = nodeChords
 

@@ -29,8 +29,6 @@ def addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particles
             # particleRadius = .5 * filamentLength
             particleVorticity = circulations[i] * filamentLength * unitVector / particlesPerFil
 
-            # print('Gamma, Length, Vorticity: ', circulations[i], filamentLength, particleVorticity)
-
             newPosX[ptclesCounter] = particlePosition[0]
             newPosY[ptclesCounter] = particlePosition[1]
             newPosZ[ptclesCounter] = particlePosition[2]
