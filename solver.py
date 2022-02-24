@@ -228,54 +228,6 @@ def wakeInductionsOnBlade(blade, wake, deltaPtcles):
 
     return
 
-
-# def wakeInductionsOnBlade(blade, wake):
-#     # First reshape wake induced velocities to new particle number
-#     inducedVelocities = np.zeros([len(wake.particlesRadius), 3])
-#     ptclesPosX = wake.particlesPositionX
-#     ptclesPosY = wake.particlesPositionY
-#     ptclesPosZ = wake.particlesPositionZ
-#     ptclesVorX = wake.particlesVorticityX
-#     ptclesVorY = wake.particlesVorticityY
-#     ptclesVorZ = wake.particlesVorticityZ
-#     ptclesRad = wake.particlesRadius
-#     for i in range(len(blade.centers)):
-#         inducedVelocity = np.sum(biotSavartParticles(blade.centers[i], ptclesPosX, ptclesPosY, ptclesPosZ, ptclesVorX, ptclesVorY, ptclesVorZ, ptclesRad, inducedVelocities), axis=0)
-#         blade.inductionsFromWake[i,:] = inducedVelocity
-#         blade.inductionsAtNodes[i,:] = np.zeros(3)
-#
-#
-#     return inducedVelocity
-
-
-# @jit(nopython=True)
-# def biotSavartParticles(evaluationPoint, ptclesPosX, ptclesPosY, ptclesPosZ, ptclesVorX, ptclesVorY, ptclesVorZ, ptclesRad, inducedVelocities):
-#     #inducedVelocities = np.zeros([len(wake.particlesRadius),3])
-#     for i in range(len(ptclesPosX)):
-#         #ptclePosition = np.asarray([wake.particlesPositionX[i], wake.particlesPositionY[i], wake.particlesPositionZ[i]])
-#         #ptcleVorticiy = np.asarray([wake.particlesVorticityX[i], wake.particlesVorticityY[i], wake.particlesVorticityZ[i]])
-#         #ptcleRadius = wake.particlesRadius[i]
-#         #coreSize = wake.particlesCoreSize[i]
-#         ptclePosition = np.asarray([ptclesPosX[i], ptclesPosY[i], ptclesPosZ[i]])
-#         ptcleVorticiy = np.asarray([ptclesVorX[i], ptclesVorY[i], ptclesVorZ[i]])
-#         ptcleRadius = ptclesRad[i]
-#         #coreSize = wake.particlesCoreSize[i]
-#         evalPoint_Minus_Particles = evaluationPoint - ptclePosition
-#         norm = np.linalg.norm(evalPoint_Minus_Particles)
-#         if(np.abs(norm) > 1e-6):
-#             # Epsilon for particles regularization
-#             delta = 0.15
-#             epsilon = ptcleRadius * delta;
-#             # Rosenhead regularisation - G. Pinon thesis
-#             d = norm*norm + epsilon*epsilon;
-#             cst = 1. / (d*np.sqrt(d));
-#             numer = cst * evalPoint_Minus_Particles;
-#             crossProduct = np.cross(numer, ptcleVorticiy)
-#             inducedVelocities[i,:] = - crossProduct / (4.*np.pi)
-#         else:
-#             inducedVelocities[i,:] = [0., 0., 0.]
-#     return inducedVelocities
-
 def wakeInductionsOnWake(wake, deltaPtcles):
     if (len(wake.particlesRadius) > 0):
         # First reshape wake induced velocities to new particle number
@@ -428,143 +380,128 @@ def bladeInductionsOnWake(blades, wake, deltaFlts):
 
 def nearWakeInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
 
-    use_gpu = True
+    # GPU version
+    bladeOnParticlesKernel_v2 = modFlts.get_function("bladeOnParticlesKernel")
 
-    if(use_gpu == False and bladeOrWake == 'blade'):
-        # CPU version
-        for blade in blades:
-            shapeInductions = np.shape(blade.wakeNodesInductions)
-            blade.wakeNodesInductions = np.zeros(shapeInductions)
-            for bladeWake in blades:
-                blade.wakeNodesInductions += biotSavartFilaments_2D(blade.wakeNodes, bladeWake.wakeNodes[:,:-1,:], bladeWake.wakeNodes[:,1:,:], bladeWake.trailFilamentsCirculation,
-                                                                      deltaFlts)
-            # for bladeWake in blades:
-            #     blade.wakeNodesInductions += biotSavartFilaments_2D(blade.wakeNodes, bladeWake.wakeNodes[:-1,:,:], bladeWake.wakeNodes[1:,:,:], bladeWake.shedFilamentsCirculation,
-            #                                                           deltaFlts)
+    # Input nodes over which inductions are computed
+    nodesPosX = np.zeros(0)
+    nodesPosY = np.zeros(0)
+    nodesPosZ = np.zeros(0)
 
-    else:
-        # GPU version
-        bladeOnParticlesKernel_v2 = modFlts.get_function("bladeOnParticlesKernel")
+    # Input filaments positions and circulations
+    leftNodesX = np.zeros(0)
+    leftNodesY = np.zeros(0)
+    leftNodesZ = np.zeros(0)
+    rightNodesX = np.zeros(0)
+    rightNodesY = np.zeros(0)
+    rightNodesZ = np.zeros(0)
+    circulations = np.zeros(0)
 
-        # Input nodes over which inductions are computed
-        nodesPosX = np.zeros(0)
-        nodesPosY = np.zeros(0)
-        nodesPosZ = np.zeros(0)
+    for blade in blades:
 
-        # Input filaments positions and circulations
-        leftNodesX = np.zeros(0)
-        leftNodesY = np.zeros(0)
-        leftNodesZ = np.zeros(0)
-        rightNodesX = np.zeros(0)
-        rightNodesY = np.zeros(0)
-        rightNodesZ = np.zeros(0)
-        circulations = np.zeros(0)
+        # Destination (nodes)
+        if(bladeOrWake == "wake"):
+            nodesX = blade.wakeNodes[:,:,0].flatten()
+            nodesPosX = np.concatenate((nodesPosX, nodesX))
+            nodesY = blade.wakeNodes[:,:,1].flatten()
+            nodesPosY = np.concatenate((nodesPosY, nodesY))
+            nodesZ = blade.wakeNodes[:,:,2].flatten()
+            nodesPosZ = np.concatenate((nodesPosZ, nodesZ))
+        elif(bladeOrWake == "blade"):
+            nodesPosX = np.concatenate((nodesPosX, blade.centers[:,0]))
+            nodesPosY = np.concatenate((nodesPosY, blade.centers[:,1]))
+            nodesPosZ = np.concatenate((nodesPosZ, blade.centers[:,2]))
+            nodesPosX = np.concatenate((nodesPosX, blade.trailingEdgeNode[:,0]))
+            nodesPosY = np.concatenate((nodesPosY, blade.trailingEdgeNode[:,1]))
+            nodesPosZ = np.concatenate((nodesPosZ, blade.trailingEdgeNode[:,2]))
 
-        for blade in blades:
-
-            # Destination (nodes)
-            if(bladeOrWake == "wake"):
-                nodesX = blade.wakeNodes[:,:,0].flatten()
-                nodesPosX = np.concatenate((nodesPosX, nodesX))
-                nodesY = blade.wakeNodes[:,:,1].flatten()
-                nodesPosY = np.concatenate((nodesPosY, nodesY))
-                nodesZ = blade.wakeNodes[:,:,2].flatten()
-                nodesPosZ = np.concatenate((nodesPosZ, nodesZ))
-            elif(bladeOrWake == "blade"):
-                nodesPosX = np.concatenate((nodesPosX, blade.centers[:,0]))
-                nodesPosY = np.concatenate((nodesPosY, blade.centers[:,1]))
-                nodesPosZ = np.concatenate((nodesPosZ, blade.centers[:,2]))
-                nodesPosX = np.concatenate((nodesPosX, blade.trailingEdgeNode[:,0]))
-                nodesPosY = np.concatenate((nodesPosY, blade.trailingEdgeNode[:,1]))
-                nodesPosZ = np.concatenate((nodesPosZ, blade.trailingEdgeNode[:,2]))
-
-            else:
-                print('bladeOrWake= ', bladeOrWake, ' is invalid.')
-                exit(0)
+        else:
+            print('bladeOrWake= ', bladeOrWake, ' is invalid.')
+            exit(0)
 
 
-            # Filament (wake) - Trail
-            leftNodesX = np.concatenate((blade.wakeNodes[:,:-1,0].flatten(), leftNodesX))
-            rightNodesX = np.concatenate((blade.wakeNodes[:,1:,0].flatten(), rightNodesX))
-            leftNodesY = np.concatenate((blade.wakeNodes[:,:-1,1].flatten(), leftNodesY))
-            rightNodesY = np.concatenate((blade.wakeNodes[:,1:,1].flatten(), rightNodesY))
-            leftNodesZ = np.concatenate((blade.wakeNodes[:,:-1,2].flatten(), leftNodesZ))
-            rightNodesZ = np.concatenate((blade.wakeNodes[:,1:,2].flatten(), rightNodesZ))
-            circulations = np.concatenate((blade.trailFilamentsCirculation.flatten(), circulations))
+        # Filament (wake) - Trail
+        leftNodesX = np.concatenate((blade.wakeNodes[:,:-1,0].flatten(), leftNodesX))
+        rightNodesX = np.concatenate((blade.wakeNodes[:,1:,0].flatten(), rightNodesX))
+        leftNodesY = np.concatenate((blade.wakeNodes[:,:-1,1].flatten(), leftNodesY))
+        rightNodesY = np.concatenate((blade.wakeNodes[:,1:,1].flatten(), rightNodesY))
+        leftNodesZ = np.concatenate((blade.wakeNodes[:,:-1,2].flatten(), leftNodesZ))
+        rightNodesZ = np.concatenate((blade.wakeNodes[:,1:,2].flatten(), rightNodesZ))
+        circulations = np.concatenate((blade.trailFilamentsCirculation.flatten(), circulations))
 
-            # Filament (wake) - Shed
-            leftNodesX = np.concatenate((blade.wakeNodes[:-1,:,0].flatten(), leftNodesX))
-            rightNodesX = np.concatenate((blade.wakeNodes[1:,:,0].flatten(), rightNodesX))
-            leftNodesY = np.concatenate((blade.wakeNodes[:-1,:,1].flatten(), leftNodesY))
-            rightNodesY = np.concatenate((blade.wakeNodes[1:,:,1].flatten(), rightNodesY))
-            leftNodesZ = np.concatenate((blade.wakeNodes[:-1,:,2].flatten(), leftNodesZ))
-            rightNodesZ = np.concatenate((blade.wakeNodes[1:,:,2].flatten(), rightNodesZ))
-            circulations = np.concatenate((blade.shedFilamentsCirculation.flatten(), circulations))
+        # Filament (wake) - Shed
+        leftNodesX = np.concatenate((blade.wakeNodes[:-1,:,0].flatten(), leftNodesX))
+        rightNodesX = np.concatenate((blade.wakeNodes[1:,:,0].flatten(), rightNodesX))
+        leftNodesY = np.concatenate((blade.wakeNodes[:-1,:,1].flatten(), leftNodesY))
+        rightNodesY = np.concatenate((blade.wakeNodes[1:,:,1].flatten(), rightNodesY))
+        leftNodesZ = np.concatenate((blade.wakeNodes[:-1,:,2].flatten(), leftNodesZ))
+        rightNodesZ = np.concatenate((blade.wakeNodes[1:,:,2].flatten(), rightNodesZ))
+        circulations = np.concatenate((blade.shedFilamentsCirculation.flatten(), circulations))
 
-        # Disregard filaments with zero circulation
-        idZeroCirc = np.where(circulations == 0.)
-        leftNodesX = np.delete(leftNodesX,idZeroCirc)
-        rightNodesX = np.delete(rightNodesX,idZeroCirc)
-        leftNodesY = np.delete(leftNodesY,idZeroCirc)
-        rightNodesY = np.delete(rightNodesY,idZeroCirc)
-        leftNodesZ = np.delete(leftNodesZ,idZeroCirc)
-        rightNodesZ = np.delete(rightNodesZ,idZeroCirc)
-        circulations = np.delete(circulations,idZeroCirc)
+    # Disregard filaments with zero circulation
+    idZeroCirc = np.where(circulations == 0.)
+    leftNodesX = np.delete(leftNodesX,idZeroCirc)
+    rightNodesX = np.delete(rightNodesX,idZeroCirc)
+    leftNodesY = np.delete(leftNodesY,idZeroCirc)
+    rightNodesY = np.delete(rightNodesY,idZeroCirc)
+    leftNodesZ = np.delete(leftNodesZ,idZeroCirc)
+    rightNodesZ = np.delete(rightNodesZ,idZeroCirc)
+    circulations = np.delete(circulations,idZeroCirc)
 
-        if(len(circulations) > 0):
+    if(len(circulations) > 0):
 
-            nodesPosX = nodesPosX.astype(np.float32)
-            nodesPosY = nodesPosY.astype(np.float32)
-            nodesPosZ = nodesPosZ.astype(np.float32)
+        nodesPosX = nodesPosX.astype(np.float32)
+        nodesPosY = nodesPosY.astype(np.float32)
+        nodesPosZ = nodesPosZ.astype(np.float32)
 
-            # Destination velocities
-            destUx = np.zeros_like(nodesPosX).astype(np.float32)
-            destUy = np.zeros_like(nodesPosY).astype(np.float32)
-            destUz = np.zeros_like(nodesPosZ).astype(np.float32)
+        # Destination velocities
+        destUx = np.zeros_like(nodesPosX).astype(np.float32)
+        destUy = np.zeros_like(nodesPosY).astype(np.float32)
+        destUz = np.zeros_like(nodesPosZ).astype(np.float32)
 
-            fltsLeftNodesX = leftNodesX[:].astype(np.float32)
-            fltsLeftNodesY = leftNodesY[:].astype(np.float32)
-            fltsLeftNodesZ = leftNodesZ[:].astype(np.float32)
-            fltsRightNodesX = rightNodesX[:].astype(np.float32)
-            fltsRightNodesY = rightNodesY[:].astype(np.float32)
-            fltsRightNodesZ = rightNodesZ[:].astype(np.float32)
-            fltsCirculations = circulations.astype(np.float32)
+        fltsLeftNodesX = leftNodesX[:].astype(np.float32)
+        fltsLeftNodesY = leftNodesY[:].astype(np.float32)
+        fltsLeftNodesZ = leftNodesZ[:].astype(np.float32)
+        fltsRightNodesX = rightNodesX[:].astype(np.float32)
+        fltsRightNodesY = rightNodesY[:].astype(np.float32)
+        fltsRightNodesZ = rightNodesZ[:].astype(np.float32)
+        fltsCirculations = circulations.astype(np.float32)
 
-            numParticles = np.int32(len(nodesPosX))
-            numFilaments = np.int32(len(fltsCirculations))
-            deltaFlts = np.float32(deltaFlts)
+        numParticles = np.int32(len(nodesPosX))
+        numFilaments = np.int32(len(fltsCirculations))
+        deltaFlts = np.float32(deltaFlts)
 
-            threadsPerBlock = 256
-            blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
+        threadsPerBlock = 256
+        blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
 
-            bladeOnParticlesKernel_v2(
-                drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
-                drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
-                drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
-                drv.In(fltsRightNodesZ), drv.In(fltsCirculations), numParticles, numFilaments, deltaFlts,
-                block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
+        bladeOnParticlesKernel_v2(
+            drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
+            drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
+            drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
+            drv.In(fltsRightNodesZ), drv.In(fltsCirculations), numParticles, numFilaments, deltaFlts,
+            block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
 
 
-            if(bladeOrWake == "blade"):
-                for blade in blades:
-                    for i in range(len(blade.centers)):
-                        blade.inductionsFromWake[i, 0] += destUx[i] #/ (4. * np.pi)
-                        blade.inductionsFromWake[i, 1] += destUy[i] #/ (4. * np.pi)
-                        blade.inductionsFromWake[i, 2] += destUz[i] #/ (4. * np.pi)
+        if(bladeOrWake == "blade"):
+            for blade in blades:
+                for i in range(len(blade.centers)):
+                    blade.inductionsFromWake[i, 0] += destUx[i] #/ (4. * np.pi)
+                    blade.inductionsFromWake[i, 1] += destUy[i] #/ (4. * np.pi)
+                    blade.inductionsFromWake[i, 2] += destUz[i] #/ (4. * np.pi)
 
-                    for i in range(len(blade.bladeNodes)):
-                        blade.inductionsAtNodes[i, 0] += destUx[i + len(blade.centers)] #/ (4. * np.pi)
-                        blade.inductionsAtNodes[i, 1] += destUy[i + len(blade.centers)] #/ (4. * np.pi)
-                        blade.inductionsAtNodes[i, 2] += destUz[i + len(blade.centers)] #/ (4. * np.pi)
+                for i in range(len(blade.bladeNodes)):
+                    blade.inductionsAtNodes[i, 0] += destUx[i + len(blade.centers)] #/ (4. * np.pi)
+                    blade.inductionsAtNodes[i, 1] += destUy[i + len(blade.centers)] #/ (4. * np.pi)
+                    blade.inductionsAtNodes[i, 2] += destUz[i + len(blade.centers)] #/ (4. * np.pi)
 
-            else:
-                shape = (len(blades), len(blade.trailFilamentsCirculation), blade.nearWakeLength)  # np.shape(blade.wakeNodesInductions[:,:])
-                inducedVelX = np.reshape(destUx, shape)
-                inducedVelY = np.reshape(destUy, shape)
-                inducedVelZ = np.reshape(destUz, shape)
-                for (iBlade, myBlade) in enumerate(blades):
-                    myBlade.wakeNodesInductions[:, :, 0] += inducedVelX[iBlade, :, :]
-                    myBlade.wakeNodesInductions[:, :, 1] += inducedVelY[iBlade, :, :]
-                    myBlade.wakeNodesInductions[:, :, 2] += inducedVelZ[iBlade, :, :]
+        else:
+            shape = (len(blades), len(blade.trailFilamentsCirculation), blade.nearWakeLength)  # np.shape(blade.wakeNodesInductions[:,:])
+            inducedVelX = np.reshape(destUx, shape)
+            inducedVelY = np.reshape(destUy, shape)
+            inducedVelZ = np.reshape(destUz, shape)
+            for (iBlade, myBlade) in enumerate(blades):
+                myBlade.wakeNodesInductions[:, :, 0] += inducedVelX[iBlade, :, :]
+                myBlade.wakeNodesInductions[:, :, 1] += inducedVelY[iBlade, :, :]
+                myBlade.wakeNodesInductions[:, :, 2] += inducedVelZ[iBlade, :, :]
 
     return
