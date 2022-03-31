@@ -34,6 +34,8 @@ class Blade:
         self.inductionsAtNodes = np.zeros([len(self.bladeNodes), 3])
 
         self.lift = np.zeros((len(self.centers)))
+        self.drag = np.zeros((len(self.centers)))
+
         self.effectiveVelocity = np.zeros((len(self.centers)))
 
         self.wakeNodesInductions = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
@@ -51,7 +53,7 @@ class Blade:
         # self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
         for i in range(self.nearWakeLength):
             for j in range(len(self.bladeNodes)):
-                self.wakeNodes[j,i,:] = self.trailingEdgeNode[j,:] + np.asarray([float(i+1) * 0.1,0.,0.]) #self.trailingEdgeNode[j] + np.asarray([float(i) * 0.1,0.,0.])
+                self.wakeNodes[j,i,:] = self.trailingEdgeNode[j,:] #+ np.asarray([float(i+1) * 0.1,0.,0.]) #self.trailingEdgeNode[j] +
         return
 
     def updateFilamentCirulations(self):
@@ -63,8 +65,6 @@ class Blade:
         self.wakeNodes[:,1:] = self.wakeNodes[:,:-1]
         self.trailFilamentsCirculation[:,1:] = self.trailFilamentsCirculation[:,:-1]
         self.shedFilamentsCirculation[:, 1:] = self.shedFilamentsCirculation[:, :-1]
-        # print('trailFilamentCIrculation :', self.trailFilamentsCirculation)
-        # print('shedFilamentCirculation :', self.shedFilamentsCirculation)
 
         self.trailFilamentsCirculation[:,0] = 0.
         self.shedFilamentsCirculation[:,0] = 0.
@@ -75,9 +75,7 @@ class Blade:
 
         wind = np.zeros(3)
         wind[0] = uInfty
-
         self.wakeNodes += wind*timeStep + self.wakeNodesInductions*timeStep
-        # print('nodes inductions: ', self.wakeNodesInductions)
         return
 
     def storeOldGammaBound(self, gammas):
@@ -104,11 +102,9 @@ class Blade:
             dist_to_TE = [self.nodeChords[i] * 3. / 4., 0, 0]
             r = R.from_matrix(self.nodesOrientationMatrix[i])
             dist_to_TE = r.apply(dist_to_TE, inverse=False)
-
             self.trailingEdgeNode[i] = self.bladeNodes[i] + dist_to_TE
-
+            
         self.wakeNodes[:,0,:] = self.trailingEdgeNode
-
         return
 
     def updateCentersPos(self):
@@ -117,14 +113,12 @@ class Blade:
             dist_to_3_4 = [self.centerChords[i] * 1. / 2., 0, 0]
             r = R.from_matrix(self.centersOrientationMatrix[i])
             dist_to_3_4 = r.apply(dist_to_3_4, inverse=False)
-
             self.centers[i] = self.centers[i] + dist_to_3_4
-
         return
 
     def estimateGammaBound(self, uInfty, nearWakeInducedVelocities):
 
-        relax = 0.25
+        relax = 0.05
 
         newGammaBounds = np.zeros(len(self.centers))
         newGamma = np.zeros(len(self.centers))
@@ -145,8 +139,10 @@ class Blade:
         # I could get rid of this for loop yet...
         for i in range(len(self.centers)):
             self.lift[i] = self.airfoils[i].getLift(self.attackAngle[i])
+            self.drag[i] = self.airfoils[i].getDrag(self.attackAngle[i])
 
         self.effectiveVelocity = np.linalg.norm(uEffectiveInElementRef, axis=1)
+
 
         newGamma = .5 * self.effectiveVelocity * self.centerChords * self.lift
         newGammaBounds = self.gammaBound + relax * (newGamma - self.gammaBound)
@@ -229,5 +225,7 @@ class Blade:
             circulations.append(c)
 
         circulations = np.asarray(circulations)
+        self.shedFilamentsCirculation[:, -1] = 0.
+        self.trailFilamentsCirculation[:, -1] = 0.
 
         return leftNodes, rightNodes, circulations

@@ -25,11 +25,9 @@ def addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particles
 
             filamentLength = np.linalg.norm(rightNodes[i] - leftNodes[i])
             unitVector = (rightNodes[i] - leftNodes[i]) / filamentLength
-            particleRadius = .55 * filamentLength / particlesPerFil
-            # particleRadius = .5 * filamentLength
+            particleRadius = .55*filamentLength/particlesPerFil
             particleVorticity = circulations[i] * filamentLength * unitVector / particlesPerFil
-
-            newPosX[ptclesCounter] = particlePosition[0]
+            newPosX[ptclesCounter] = particlePosition[0] 
             newPosY[ptclesCounter] = particlePosition[1]
             newPosZ[ptclesCounter] = particlePosition[2]
 
@@ -71,53 +69,21 @@ class Wake:
 
         self.inducedVelocities = np.zeros([0, 3])
 
+        self.ptclesPosX = self.particlesPositionX.astype(np.float32)
+        self.ptclesPosY = self.particlesPositionY.astype(np.float32)
+        self.ptclesPosZ = self.particlesPositionZ.astype(np.float32)
+        self.ptclesVorX = self.particlesVorticityX.astype(np.float32)
+        self.ptclesVorY = self.particlesVorticityY.astype(np.float32)
+        self.ptclesVorZ = self.particlesVorticityZ.astype(np.float32)
+        self.ptclesRad = self.particlesRadius.astype(np.float32)
+
+
         return
 
 
 
     def addParticlesFromFilaments_50(self, leftNodes, rightNodes, circulations, particlesPerFil):
 
-        # newPosX = np.zeros(len(circulations) * particlesPerFil)
-        # newPosY = np.zeros(len(circulations) * particlesPerFil)
-        # newPosZ = np.zeros(len(circulations) * particlesPerFil)
-        #
-        # newVorX = np.zeros(len(circulations) * particlesPerFil)
-        # newVorY = np.zeros(len(circulations) * particlesPerFil)
-        # newVorZ = np.zeros(len(circulations) * particlesPerFil)
-        #
-        # newRadius = np.zeros(len(circulations) * particlesPerFil)
-        #
-        # ptclesCounter = 0
-        #
-        # for i in range(len(circulations)):
-        #     for numParticle in range(particlesPerFil):
-        #
-        #         rightCoef = numParticle + 1
-        #         leftCoef = particlesPerFil - numParticle
-        #
-        #         particlePosition = 1. / (particlesPerFil+1.) * (leftCoef * leftNodes[i] + rightCoef * rightNodes[i])
-        #
-        #
-        #         filamentLength =  np.linalg.norm(rightNodes[i] - leftNodes[i])
-        #         unitVector = (rightNodes[i] - leftNodes[i]) / filamentLength
-        #         particleRadius = .5 * filamentLength
-        #         particleVorticity = circulations[i] * filamentLength * unitVector / particlesPerFil
-        #
-        #         newPosX[ptclesCounter] = particlePosition[0]
-        #         newPosY[ptclesCounter] = particlePosition[1]
-        #         newPosZ[ptclesCounter] = particlePosition[2]
-        #
-        #         newVorX[ptclesCounter] = particleVorticity[0]
-        #         newVorY[ptclesCounter] = particleVorticity[1]
-        #         newVorZ[ptclesCounter] = particleVorticity[2]
-        #
-        #         newRadius[ptclesCounter] = particleRadius
-        #
-        #         ptclesCounter += 1
-
-        # print(np.shape(leftNodes), np.shape(rightNodes), np.shape(circulations))
-        # for i in range(len(circulations)):
-            # print('left, right, circ: ', leftNodes[i], rightNodes[i], circulations[i])
         newPosX, newPosY, newPosZ, newVorX, newVorY, newVorZ, newRadius = addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particlesPerFil)
 
         self.particlesPositionX = np.concatenate((self.particlesPositionX, newPosX), axis=0)
@@ -131,8 +97,6 @@ class Wake:
         self.particlesRadius = np.concatenate((self.particlesRadius, newRadius), axis=0)
 
         return
-
-
 
 
     def advectParticles(self, uInfty, timeStep):

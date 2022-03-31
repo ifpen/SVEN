@@ -1,183 +1,5 @@
-import time
-
-
-from inductions import *
+from kernels import *
 from wake import *
-
-def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, particlesPerFil):
-
-    iteration = timeSimulation / timeStep
-    iterationTime = time.time()
-
-    #############################################################################################
-    # Initialize all inductions
-    #############################################################################################
-    for (iBlade, blade) in enumerate(blades):
-        blade.inductionsFromWake[:,:] = 0.
-        blade.inductionsAtNodes[:,:] = 0.
-        blade.wakeNodesInductions[:, :, :] = 0.
-
-    ##############################################################################################
-    # Calculates the attachment point of the very first filament row (or trailing edge position)
-    ##############################################################################################
-    for blade in blades:
-        blade.updateFirstWakeRow()
-
-    ##############################################################################################
-    # Getting info on left and right nodes from wake filaments in order to
-    # generate wake particles :
-    # (1) "getFilamentsInfo" : allows for emission after the first row of filaments
-    #                        where (uInfty+induction)*dt is used to create right Nodes
-    #                        and trailing edge nodes are used as left Nodes
-    # (2) "getLastFilamentsInfo" : allows for particle emission after last filament row in the wake
-    ###############################################################################################
-    t0 = time.time()
-    leftNodes = np.zeros((0, 3))
-    rightNodes = np.zeros((0, 3))
-    circulations = np.zeros(0)
-    nearWakeLength = 0
-    for blade in blades:
-        if(blade.nearWakeLength == 2):
-            bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getFilamentsInfo(uInfty, timeStep)
-        else:
-            bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getLastFilamentsInfo(uInfty, timeStep)
-        nearWakeLength = blade.nearWakeLength
-
-        leftNodes = np.concatenate((leftNodes, bladeLeftNodes), axis=0)
-        rightNodes = np.concatenate((rightNodes, bladeRightNodes), axis=0)
-        circulations = np.concatenate((circulations, bladeCirculations), axis=0)
-
-    ##############################################################################################################
-    # "addParticlesFromFilaments_50" : takes left and right nodes of previously defined filaments and adds a user
-    #                                  defined "particlesPerFil" number of particles between the nodes.
-    ##############################################################################################################
-    if(iteration > nearWakeLength):
-        wake.addParticlesFromFilaments_50(leftNodes, rightNodes, circulations, particlesPerFil)
-    t1 = time.time()
-    print('addParticles: ', t1 - t0)
-
-    ############################################################################################
-    # If the wake is composed of filaments : compute the filaments' induction on blade centers
-    ############################################################################################
-    t0 = time.time()
-    if(nearWakeLength > 2):
-        bladeOrWake = "blade"
-        wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake)
-
-    #############################################################################################
-    # If the wake is composed of particles : compute the particles' induction on blade centers
-    #############################################################################################
-    if (len(wake.particlesRadius) > 0):
-        for blade in blades:
-            wakeParticlesInductionsOnBlade(blade, wake, deltaPtcles)
-
-    t1 = time.time()
-    print('wakeInductionsOnBlade: ', t1 - t0)
-
-    #################################################################################################
-    # Not clear but important : these have to be set back to zero before gamma bound convergence loop
-    #################################################################################################
-    for i in range(len(blade.gammaShed)):
-        blade.gammaShed[i] = 0.
-    for i in range(len(blade.gammaTrail)):
-        blade.gammaTrail[i] = 0.
-
-    t0 = time.time()
-    biotTime = 0
-
-
-    ############################################################################################
-    # Convergence loop over gammaBound
-    ############################################################################################
-
-    bladesGammaBounds = []
-    for i in range(len(blades)):
-        bladesGammaBounds.append(0.)
-    for i in range(innerIter):
-        tb0 = time.time()
-        #######################################################################################################
-        # (1) "nearWakeInduction" : calculates induced velocities of bound filaments from one blade to another
-        # (2) "estimateGammaBound": knowing all induced velocities on the blade -> calculate the blade's
-        #                           effective velocity + angle of attack + lift coefficient -> determine new
-        #                           bound circulation value.
-        # (3) "updateSheds/updateTrails" : knowing new bound circulation -> shed and trail circulations can be
-        #                                  deduced.
-        #######################################################################################################
-        nearWakeInducedVelocities = nearWakeInduction(blades, deltaFlts)
-        tb1 = time.time()
-        biotTime += tb1 - tb0
-
-        iBlade = 0
-        for (blade, bladeInducedVelocities) in zip(blades, nearWakeInducedVelocities):
-            bladesGammaBounds[iBlade] = blade.estimateGammaBound(uInfty, bladeInducedVelocities)
-            blade.updateSheds(bladesGammaBounds[iBlade])
-            blade.updateTrails(bladesGammaBounds[iBlade])
-
-            blade.gammaBound = bladesGammaBounds[iBlade]
-            iBlade += 1
-
-    ################################################################################
-    # Store bound circulation value after convergence : important for next timestep
-    ################################################################################
-    for (iBlade, blade) in enumerate(blades):
-        blade.storeOldGammaBound(bladesGammaBounds[iBlade])
-
-    t1 = time.time()
-    print('gammaBoundUpdate: ', t1 - t0, biotTime)
-
-    #########################################################################################################
-    # Compute all inductions on wake elements : 
-    # (1) "wakeFilamentsInductionsOnBladeOrWake" : inductions from wake filaments on all other wake filaments
-    # (2) "particlesInductionOnFilaments"        : inductions from wake Particles on wake filaments
-    # (3) "filamentsInductionOnParticles"        : inductions from wake Filaments on wake particles
-    # (4) "bladeInductionsOnWake"                : inductions from blades on wake filaments and/or particles
-    #########################################################################################################
-    t0 = time.time()
-    wakeInductionsOnWake(wake, deltaPtcles)
-    t1 = time.time()
-    print('wakeOnWake: ', t1 - t0)
-
-    # if(timeSimulation > 30.*timeStep):
-    if(nearWakeLength > 2):
-        wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, "wake")
-        particlesInductionOnFilaments(blades, wake, deltaPtcles,wake.ptclesPosX, wake.ptclesPosY, wake.ptclesPosZ, wake.ptclesVorX, wake.ptclesVorY, wake.ptclesVorZ, wake.ptclesRad)
-        filamentsInductionOnParticles(blades, wake, deltaFlts)
-    
-    t0 = time.time()
-    bladeInductionsOnWake(blades, wake, deltaFlts)
-    t1 = time.time()
-    print('bladeOnWake: ', t1 - t0)
-
-    ######################################################################################
-    # Once all inductions are known, the induced wake velocity is used to advect particles
-    # and filaments in the wake.
-    ######################################################################################
-    t0 = time.time()
-    wake.advectParticles(uInfty, timeStep)
-
-    if(nearWakeLength > 2):
-        for blade in blades:
-            blade.advectFilaments(uInfty, timeStep)
-    t1 = time.time()
-    print('advection: ', t1 - t0)
-    
-    ###########################################################################################
-    # (1) "spliceNearWake"            : trail and shed filaments from the second to last row
-    #                                   take values of sheds and trails from first to second
-    #                                   to last row.
-    # (2) "updateFilamentCirculation" : first row of filaments take trail and shed circulations
-    #                                   values computed after gammaBound convergence loop.
-    ###########################################################################################
-
-    if(nearWakeLength > 2):
-        for blade in blades:
-            blade.spliceNearWake()
-            blade.updateFilamentCirulations()
-   
-
-    print('Full iteration time: ', time.time() - iterationTime)
-    return
-
 
 def wakeParticlesInductionsOnBlade(blade, wake, deltaPtcles):
     ptclesPosX = wake.particlesPositionX.astype(np.float32)
@@ -388,9 +210,7 @@ def bladeInductionsOnWake(blades, wake, deltaFlts):
     return
 
 
-
-
-def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
+def wakeInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
     # GPU versiond
     bladeOnParticlesKernel_v2 = modFlts.get_function("bladeOnParticlesKernel")
 
@@ -458,6 +278,8 @@ def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
     rightNodesZ = np.delete(rightNodesZ, idZeroCirc)
     circulations = np.delete(circulations, idZeroCirc)
 
+
+
     if (len(circulations) > 0):
 
         nodesPosX = nodesPosX.astype(np.float32)
@@ -491,6 +313,7 @@ def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
             drv.In(fltsRightNodesZ), drv.In(fltsCirculations), numParticles, numFilaments, deltaFlts,
             block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
 
+
         if (bladeOrWake == "blade"):
             for blade in blades:
                 for i in range(len(blade.centers)):
@@ -516,27 +339,9 @@ def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
 
     return
 
-def bladeInductionOnWakeFilaments(blades, wake, deltaFlts, bladeOrWake):
 
-    bladeOnParticlesKernel_v2 = modFlts.get_function("bladeOnParticlesKernel")
-
-    # Input nodes over which inductions are computed
-    nodesPosX = np.zeros(0)
-    nodesPosY = np.zeros(0)
-    nodesPosZ = np.zeros(0)
-
-
-    nodesX = blade.wakeNodes[:, :, 0].flatten()
-    nodesPosX = np.concatenate((nodesPosX, nodesX))
-    nodesY = blade.wakeNodes[:, :, 1].flatten()
-    nodesPosY = np.concatenate((nodesPosY, nodesY))
-    nodesZ = blade.wakeNodes[:, :, 2].flatten()
-    nodesPosZ = np.concatenate((nodesPosZ, nodesZ))
-
-
-def particlesInductionOnFilaments(blades, wake,
-                                  deltaPtcles, ptclesPosX, ptclesPosY, ptclesPosZ, ptclesVorX, ptclesVorY, ptclesVorZ, ptclesRad):
-
+def particlesInductionOnFilaments(blades, wake, deltaPtcles):#, ptclesPosX, ptclesPosY, ptclesPosZ, ptclesVorX, ptclesVorY, ptclesVorZ, ptclesRad):
+    
     if (len(wake.particlesRadius) > 0):
         ptclesPosX = wake.particlesPositionX.astype(np.float32)
         ptclesPosY = wake.particlesPositionY.astype(np.float32)
@@ -677,5 +482,3 @@ def filamentsInductionOnParticles(blades, wake, deltaFlts):
             wake.inducedVelocities[:, 2] += destUz[:] / (4. * np.pi)
 
     return
-
-
