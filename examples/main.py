@@ -74,7 +74,7 @@ def EllipticalWing(bladePitch):
 
     airfoils = []
     for i in range(len(nodes) - 1):
-        airfoils.append(Airfoil('flatPlate.foil'))
+        airfoils.append(Airfoil('../data/flatPlate.foil'))
 
     centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
     for i in range(len(nodes) - 1):
