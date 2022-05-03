@@ -1,6 +1,4 @@
 import numpy as np
-from scipy import interpolate
-from scipy.interpolate import RegularGridInterpolator
 from numba import jit, prange, njit
 
 @njit(fastmath=True)
@@ -31,13 +29,7 @@ class Airfoil:
         self.Drags = airfoilData[sortedIndices,2]
 
     def getLift(self, aoa):
-        lift = interp_checked(self.AOAs, self.Lifts, aoa)
-        if(np.isnan(lift)):
-            lift = 0.
-        return 1. #lift
+        return interp_checked(self.AOAs, self.Lifts, aoa)
 
     def getDrag(self, aoa):
-        drag = interp_checked(self.AOAs, self.Lifts, aoa)
-        if(np.isnan(drag)):
-            drag = 0.
-        return 0. #drag
+        return interp_checked(self.AOAs, self.Drags, aoa)
