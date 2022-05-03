@@ -24,11 +24,11 @@ def NewMexicoWindTurbine():
     bladePitch = sign * 0.040143
     nearWakeLength = 359
 
-    dataAirfoils = np.genfromtxt('turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
+    dataAirfoils = np.genfromtxt('../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
                                  dtype='U')
     intAirfoils = np.arange(0, len(dataAirfoils))
 
-    data = np.genfromtxt('turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
+    data = np.genfromtxt('../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
 
     refRadius = data[:,2] #np.linspace(0., 2.04, 45) # data[:,2]
 
@@ -40,7 +40,7 @@ def NewMexicoWindTurbine():
     centersAirfoils = []
     for i in range(len(refRadius)):
         foilName = str(dataAirfoils[int(f(refRadius[i]))])
-        centersAirfoils.append(Airfoil('turbineModels/NewMexico/reference_files/' + foilName, headerLength=1))
+        centersAirfoils.append(Airfoil('../turbineModels/NewMexico/reference_files/' + foilName, headerLength=1))
 
     nodesRadius = hubRadius + refRadius
     nodesTwistAngles = np.interp(refRadius, data[:, 2], inputNodesTwistAngles)
@@ -149,7 +149,7 @@ def write_blade_tp(blades, outDir):
     return
 
 
-windTurbineCase = False
+windTurbineCase = True
 # Blades, WindTurbine, uInfty, deltaFlts = NewMexicoWindTurbine()  # EllipticalWing() #StraightWingCastor() #StraightBlade() #EllipticalWing()
 
 if(windTurbineCase == True):
@@ -160,6 +160,7 @@ if(windTurbineCase == True):
     innerIter  = 12
     nRotations = 10.
     timeEnd = np.radians(nRotations * 360.) / WindTurbine.rotationalVelocity
+    # timeEnd = np.radians(0.5 * 360.) / WindTurbine.rotationalVelocity
     eps_conv = 1e-4
 
     refAzimuth = -WindTurbine.rotationalVelocity * timeStep

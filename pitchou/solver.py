@@ -77,10 +77,8 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
     #################################################################################################
     # Not clear but important : these have to be set back to zero before gamma bound convergence loop
     #################################################################################################
-    for i in range(len(blade.gammaShed)):
-        blade.gammaShed[i] = 0.
-    for i in range(len(blade.gammaTrail)):
-        blade.gammaTrail[i] = 0.
+    blade.gammaShed  = np.zeros_like(blade.gammaShed)
+    blade.gammaTrail = np.zeros_like(blade.gammaTrail)
 
     t0 = time.time()
     biotTime = 0
@@ -134,15 +132,15 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
     #########################################################################################################
     t0 = time.time()
     wakeInductionsOnWake(wake, deltaPtcles)
-    t1 = time.time()
-    print('wakeOnWake: ', t1 - t0)
 
     # if(timeSimulation > 30.*timeStep):
     if(nearWakeLength > 2):
         wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, "wake")
         particlesInductionOnFilaments(blades, wake, deltaPtcles,wake.ptclesPosX, wake.ptclesPosY, wake.ptclesPosZ, wake.ptclesVorX, wake.ptclesVorY, wake.ptclesVorZ, wake.ptclesRad)
         filamentsInductionOnParticles(blades, wake, deltaFlts)
-    
+    t1 = time.time()
+    print('wakeOnWake: ', t1 - t0)
+
     t0 = time.time()
     bladeInductionsOnWake(blades, wake, deltaFlts)
     t1 = time.time()
@@ -180,20 +178,20 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
 
 
 def wakeParticlesInductionsOnBlade(blade, wake, deltaPtcles):
-    ptclesPosX = wake.particlesPositionX.astype(np.float32)
-    ptclesPosY = wake.particlesPositionY.astype(np.float32)
-    ptclesPosZ = wake.particlesPositionZ.astype(np.float32)
-    ptclesVorX = wake.particlesVorticityX.astype(np.float32)
-    ptclesVorY = wake.particlesVorticityY.astype(np.float32)
-    ptclesVorZ = wake.particlesVorticityZ.astype(np.float32)
-    ptclesRad = wake.particlesRadius.astype(np.float32)
+    ptclesPosX = wake.particlesPositionX
+    ptclesPosY = wake.particlesPositionY
+    ptclesPosZ = wake.particlesPositionZ
+    ptclesVorX = wake.particlesVorticityX
+    ptclesVorY = wake.particlesVorticityY
+    ptclesVorZ = wake.particlesVorticityZ
+    ptclesRad = wake.particlesRadius
 
     particlesOnBladesKernel = modPtcles.get_function("particlesOnBladesKernel")
 
     fullLength = int(len(blade.centers) + len(blade.bladeNodes))
-    destUx = np.zeros(fullLength).astype(np.float32)
-    destUy = np.zeros(fullLength).astype(np.float32)
-    destUz = np.zeros(fullLength).astype(np.float32)
+    destUx = np.zeros(fullLength)
+    destUy = np.zeros(fullLength)
+    destUz = np.zeros(fullLength)
 
     bladeNodesX = np.zeros(fullLength)
     bladeNodesY = np.zeros(fullLength)
@@ -207,9 +205,9 @@ def wakeParticlesInductionsOnBlade(blade, wake, deltaPtcles):
         bladeNodesX[i + len(blade.centers)] = blade.trailingEdgeNode[i, 0]
         bladeNodesY[i + len(blade.centers)] = blade.trailingEdgeNode[i, 1]
         bladeNodesZ[i + len(blade.centers)] = blade.trailingEdgeNode[i, 2]
-    bladeNodesX = bladeNodesX.astype(np.float32)
-    bladeNodesY = bladeNodesY.astype(np.float32)
-    bladeNodesZ = bladeNodesZ.astype(np.float32)
+    # bladeNodesX = bladeNodesX.astype(np.float32)
+    # bladeNodesY = bladeNodesY.astype(np.float32)
+    # bladeNodesZ = bladeNodesZ.astype(np.float32)
 
     numParticles = np.int32(len(ptclesPosX))
     numBladePoint = np.int32(fullLength)
@@ -243,19 +241,19 @@ def wakeInductionsOnWake(wake, deltaPtcles):
         # First reshape wake induced velocities to new particle number
         wake.inducedVelocities = np.zeros([len(wake.particlesRadius), 3])
 
-        ptclesPosX = wake.particlesPositionX.astype(np.float32)
-        ptclesPosY = wake.particlesPositionY.astype(np.float32)
-        ptclesPosZ = wake.particlesPositionZ.astype(np.float32)
-        ptclesVorX = wake.particlesVorticityX.astype(np.float32)
-        ptclesVorY = wake.particlesVorticityY.astype(np.float32)
-        ptclesVorZ = wake.particlesVorticityZ.astype(np.float32)
-        ptclesRad = wake.particlesRadius.astype(np.float32)
+        ptclesPosX = wake.particlesPositionX
+        ptclesPosY = wake.particlesPositionY
+        ptclesPosZ = wake.particlesPositionZ
+        ptclesVorX = wake.particlesVorticityX
+        ptclesVorY = wake.particlesVorticityY
+        ptclesVorZ = wake.particlesVorticityZ
+        ptclesRad = wake.particlesRadius
 
         particlesOnParticlesKernel = mod.get_function("particlesOnParticlesKernel")
 
-        destUx = np.zeros_like(ptclesPosX).astype(np.float32)
-        destUy = np.zeros_like(ptclesPosY).astype(np.float32)
-        destUz = np.zeros_like(ptclesPosZ).astype(np.float32)
+        destUx = np.zeros_like(ptclesPosX)
+        destUy = np.zeros_like(ptclesPosY)
+        destUz = np.zeros_like(ptclesPosZ)
         numParticles = np.int32(len(ptclesPosX))
         threadsPerBlock = 256
         blocksPerGrid = int((len(ptclesPosX) + threadsPerBlock - 1) / threadsPerBlock)
@@ -322,25 +320,26 @@ def bladeInductionsOnWake(blades, wake, deltaFlts):
     nodesPosZ = np.concatenate((nodesPosZ, wake.particlesPositionZ))
     wakePtclesSize = len(wake.particlesPositionX)
 
-    nodesPosX = nodesPosX.astype(np.float32)
-    nodesPosY = nodesPosY.astype(np.float32)
-    nodesPosZ = nodesPosZ.astype(np.float32)
+    # nodesPosX = nodesPosX.astype(np.float32)
+    # nodesPosY = nodesPosY.astype(np.float32)
+    # nodesPosZ = nodesPosZ.astype(np.float32)
 
     # Destination velocities
-    destUx = np.zeros_like(nodesPosX).astype(np.float32)
-    destUy = np.zeros_like(nodesPosY).astype(np.float32)
-    destUz = np.zeros_like(nodesPosZ).astype(np.float32)
+    destUx = np.zeros_like(nodesPosX)
+    destUy = np.zeros_like(nodesPosY)
+    destUz = np.zeros_like(nodesPosZ)
 
     # Input filaments positions and circulations
-    leftNodes = np.zeros((0, 3))
-    rightNodes = np.zeros((0, 3))
-    circulations = np.zeros(0)
+    leftNodes = np.zeros((0, 3), dtype=np.float32)
+    rightNodes = np.zeros((0, 3), dtype=np.float32)
+    circulations = np.zeros(0, dtype=np.float32)
     for blade in blades:
         bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getNodesAndCirculations(useBoundFilaments)
         leftNodes = np.concatenate((leftNodes, bladeLeftNodes), axis=0)
         rightNodes = np.concatenate((rightNodes, bladeRightNodes))
         circulations = np.concatenate((circulations, bladeCirculations))
 
+    # TODO: try to avoid casting here
     fltsLeftNodesX = leftNodes[:, 0].astype(np.float32)
     fltsLeftNodesY = leftNodes[:, 1].astype(np.float32)
     fltsLeftNodesZ = leftNodes[:, 2].astype(np.float32)
@@ -460,22 +459,22 @@ def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
 
     if (len(circulations) > 0):
 
-        nodesPosX = nodesPosX.astype(np.float32)
-        nodesPosY = nodesPosY.astype(np.float32)
-        nodesPosZ = nodesPosZ.astype(np.float32)
+        # nodesPosX = nodesPosX.astype(np.float32)
+        # nodesPosY = nodesPosY.astype(np.float32)
+        # nodesPosZ = nodesPosZ.astype(np.float32)
 
         # Destination velocities
-        destUx = np.zeros_like(nodesPosX).astype(np.float32)
-        destUy = np.zeros_like(nodesPosY).astype(np.float32)
-        destUz = np.zeros_like(nodesPosZ).astype(np.float32)
+        destUx = np.zeros_like(nodesPosX)
+        destUy = np.zeros_like(nodesPosY)
+        destUz = np.zeros_like(nodesPosZ)
 
-        fltsLeftNodesX = leftNodesX[:].astype(np.float32)
-        fltsLeftNodesY = leftNodesY[:].astype(np.float32)
-        fltsLeftNodesZ = leftNodesZ[:].astype(np.float32)
-        fltsRightNodesX = rightNodesX[:].astype(np.float32)
-        fltsRightNodesY = rightNodesY[:].astype(np.float32)
-        fltsRightNodesZ = rightNodesZ[:].astype(np.float32)
-        fltsCirculations = circulations.astype(np.float32)
+        fltsLeftNodesX = leftNodesX[:]
+        fltsLeftNodesY = leftNodesY[:]
+        fltsLeftNodesZ = leftNodesZ[:]
+        fltsRightNodesX = rightNodesX[:]
+        fltsRightNodesY = rightNodesY[:]
+        fltsRightNodesZ = rightNodesZ[:]
+        fltsCirculations = circulations
 
         numParticles = np.int32(len(nodesPosX))
         numFilaments = np.int32(len(fltsCirculations))
@@ -538,13 +537,13 @@ def particlesInductionOnFilaments(blades, wake,
                                   deltaPtcles, ptclesPosX, ptclesPosY, ptclesPosZ, ptclesVorX, ptclesVorY, ptclesVorZ, ptclesRad):
 
     if (len(wake.particlesRadius) > 0):
-        ptclesPosX = wake.particlesPositionX.astype(np.float32)
-        ptclesPosY = wake.particlesPositionY.astype(np.float32)
-        ptclesPosZ = wake.particlesPositionZ.astype(np.float32)
-        ptclesVorX = wake.particlesVorticityX.astype(np.float32)
-        ptclesVorY = wake.particlesVorticityY.astype(np.float32)
-        ptclesVorZ = wake.particlesVorticityZ.astype(np.float32)
-        ptclesRad = wake.particlesRadius.astype(np.float32)
+        ptclesPosX = wake.particlesPositionX
+        ptclesPosY = wake.particlesPositionY
+        ptclesPosZ = wake.particlesPositionZ
+        ptclesVorX = wake.particlesVorticityX
+        ptclesVorY = wake.particlesVorticityY
+        ptclesVorZ = wake.particlesVorticityZ
+        ptclesRad = wake.particlesRadius
 
         particlesInductionOnFilamentsKernel = modPtcles.get_function("particlesOnBladesKernel")
 
@@ -561,14 +560,14 @@ def particlesInductionOnFilaments(blades, wake,
             nodesZ = blade.wakeNodes[:, :, 2].flatten()
             nodesPosZ = np.concatenate((nodesPosZ, nodesZ))
 
-        nodesPosX = nodesPosX.astype(np.float32)
-        nodesPosY = nodesPosY.astype(np.float32)
-        nodesPosZ = nodesPosZ.astype(np.float32)
+        # nodesPosX = nodesPosX.astype(np.float32)
+        # nodesPosY = nodesPosY.astype(np.float32)
+        # nodesPosZ = nodesPosZ.astype(np.float32)
 
         # Destination velocities
-        destUx = np.zeros_like(nodesPosX).astype(np.float32)
-        destUy = np.zeros_like(nodesPosY).astype(np.float32)
-        destUz = np.zeros_like(nodesPosZ).astype(np.float32)
+        destUx = np.zeros_like(nodesPosX)
+        destUy = np.zeros_like(nodesPosY)
+        destUz = np.zeros_like(nodesPosZ)
 
         numBladePoint = np.int32(len(nodesPosX))
         numParticles = np.int32(len(ptclesPosX))
@@ -602,14 +601,14 @@ def filamentsInductionOnParticles(blades, wake, deltaFlts):
         filamentsInductionOnParticlesKernel = modFlts.get_function("bladeOnParticlesKernel")
 
         # Destination positions
-        ptclesPosX = wake.particlesPositionX.astype(np.float32)
-        ptclesPosY = wake.particlesPositionY.astype(np.float32)
-        ptclesPosZ = wake.particlesPositionZ.astype(np.float32)
+        ptclesPosX = wake.particlesPositionX
+        ptclesPosY = wake.particlesPositionY
+        ptclesPosZ = wake.particlesPositionZ
 
         # Destination velocities
-        destUx = np.zeros_like(ptclesPosX).astype(np.float32)
-        destUy = np.zeros_like(ptclesPosY).astype(np.float32)
-        destUz = np.zeros_like(ptclesPosZ).astype(np.float32)
+        destUx = np.zeros_like(ptclesPosX)
+        destUy = np.zeros_like(ptclesPosY)
+        destUz = np.zeros_like(ptclesPosZ)
 
         # Input filaments positions and circulations
         leftNodesX = np.zeros(0)
@@ -650,13 +649,13 @@ def filamentsInductionOnParticles(blades, wake, deltaFlts):
         circulations = np.delete(circulations, idZeroCirc)
 
         if (len(circulations) > 0):
-            fltsLeftNodesX = leftNodesX[:].astype(np.float32)
-            fltsLeftNodesY = leftNodesY[:].astype(np.float32)
-            fltsLeftNodesZ = leftNodesZ[:].astype(np.float32)
-            fltsRightNodesX = rightNodesX[:].astype(np.float32)
-            fltsRightNodesY = rightNodesY[:].astype(np.float32)
-            fltsRightNodesZ = rightNodesZ[:].astype(np.float32)
-            fltsCirculations = circulations.astype(np.float32)
+            fltsLeftNodesX = leftNodesX[:]
+            fltsLeftNodesY = leftNodesY[:]
+            fltsLeftNodesZ = leftNodesZ[:]
+            fltsRightNodesX = rightNodesX[:]
+            fltsRightNodesY = rightNodesY[:]
+            fltsRightNodesZ = rightNodesZ[:]
+            fltsCirculations = circulations
 
             numParticles = np.int32(len(ptclesPosX))
             numFilaments = np.int32(len(fltsCirculations))

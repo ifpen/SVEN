@@ -4,15 +4,15 @@ from numba import jit, prange, njit
 @njit(fastmath=True)
 def addParticlesFromFilaments_Jit(leftNodes, rightNodes, circulations, particlesPerFil):
 
-    newPosX = np.zeros(len(circulations) * particlesPerFil)
-    newPosY = np.zeros(len(circulations) * particlesPerFil)
-    newPosZ = np.zeros(len(circulations) * particlesPerFil)
+    newPosX = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
+    newPosY = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
+    newPosZ = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
 
-    newVorX = np.zeros(len(circulations) * particlesPerFil)
-    newVorY = np.zeros(len(circulations) * particlesPerFil)
-    newVorZ = np.zeros(len(circulations) * particlesPerFil)
+    newVorX = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
+    newVorY = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
+    newVorZ = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
 
-    newRadius = np.zeros(len(circulations) * particlesPerFil)
+    newRadius = np.zeros(len(circulations) * particlesPerFil, dtype=np.float32)
 
     ptclesCounter = 0
 
@@ -55,19 +55,19 @@ def advectJit(posX, posY, posZ, vels, uInf, timeStep, length):
 
 class Wake:
     def __init__(self):
-        self.particlesPositionX = np.zeros(0)
-        self.particlesPositionY = np.zeros(0)
-        self.particlesPositionZ = np.zeros(0)
+        self.particlesPositionX = np.zeros(0, dtype=np.float32)
+        self.particlesPositionY = np.zeros(0, dtype=np.float32)
+        self.particlesPositionZ = np.zeros(0, dtype=np.float32)
 
-        self.particlesVorticityX = np.zeros(0)
-        self.particlesVorticityY = np.zeros(0)
-        self.particlesVorticityZ = np.zeros(0)
+        self.particlesVorticityX = np.zeros(0, dtype=np.float32)
+        self.particlesVorticityY = np.zeros(0, dtype=np.float32)
+        self.particlesVorticityZ = np.zeros(0, dtype=np.float32)
 
-        self.particlesRadius = np.zeros(0)
-        self.particlesCoreSize = np.zeros(0)
-        self.initialCoreSize = np.zeros(0)
+        self.particlesRadius = np.zeros(0, dtype=np.float32)
+        self.particlesCoreSize = np.zeros(0, dtype=np.float32)
+        self.initialCoreSize = np.zeros(0, dtype=np.float32)
 
-        self.inducedVelocities = np.zeros([0, 3])
+        self.inducedVelocities = np.zeros([0, 3], dtype=np.float32)
 
         self.ptclesPosX = self.particlesPositionX.astype(np.float32)
         self.ptclesPosY = self.particlesPositionY.astype(np.float32)

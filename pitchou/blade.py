@@ -8,15 +8,15 @@ class Blade:
 
         self.nearWakeLength = nearWakeLength
 
-        self.gammaBound = np.zeros(len(nodes) - 1)
-        self.newGammaBound = np.zeros(len(nodes) - 1)
-        self.oldGammaBound = np.zeros(len(nodes) - 1)
-        self.gammaShed = np.zeros(len(nodes) - 1)
-        self.gammaTrail = np.zeros(len(nodes))
-        self.attackAngle = np.zeros(len(nodes) - 1)
+        self.gammaBound = np.zeros(len(nodes) - 1, dtype=np.float32)
+        self.newGammaBound = np.zeros(len(nodes) - 1, dtype=np.float32)
+        self.oldGammaBound = np.zeros(len(nodes) - 1, dtype=np.float32)
+        self.gammaShed = np.zeros(len(nodes) - 1, dtype=np.float32)
+        self.gammaTrail = np.zeros(len(nodes), dtype=np.float32)
+        self.attackAngle = np.zeros(len(nodes) - 1, dtype=np.float32)
 
         self.bladeNodes = nodes
-        self.trailingEdgeNode = np.zeros(np.shape(nodes))
+        self.trailingEdgeNode = np.zeros(np.shape(nodes), dtype=np.float32)
         self.centers = .5 * (nodes[1:] + nodes[:-1])
         self.nodeChords = nodeChords
         self.centerChords = .5 * (nodeChords[1:] + nodeChords[:-1])
@@ -30,19 +30,19 @@ class Blade:
         self.prevCentersTranslationVelocity = centersTranslationVelocity
         self.prevNodesTranslationVelocity = nodesTranslationVelocity
 
-        self.inductionsFromWake = np.zeros([len(self.centers), 3])
-        self.inductionsAtNodes = np.zeros([len(self.bladeNodes), 3])
+        self.inductionsFromWake = np.zeros([len(self.centers), 3], dtype=np.float32)
+        self.inductionsAtNodes = np.zeros([len(self.bladeNodes), 3], dtype=np.float32)
 
-        self.lift = np.zeros((len(self.centers)))
-        self.drag = np.zeros((len(self.centers)))
+        self.lift = np.zeros((len(self.centers)), dtype=np.float32)
+        self.drag = np.zeros((len(self.centers)), dtype=np.float32)
 
-        self.effectiveVelocity = np.zeros((len(self.centers)))
+        self.effectiveVelocity = np.zeros((len(self.centers)), dtype=np.float32)
 
-        self.wakeNodesInductions = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
-        self.trailFilamentsCirculation = np.zeros([len(self.bladeNodes), self.nearWakeLength-1])
-        self.shedFilamentsCirculation = np.zeros([len(self.bladeNodes)-1, self.nearWakeLength])
+        self.wakeNodesInductions = np.zeros([len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
+        self.trailFilamentsCirculation = np.zeros([len(self.bladeNodes), self.nearWakeLength-1], dtype=np.float32)
+        self.shedFilamentsCirculation = np.zeros([len(self.bladeNodes)-1, self.nearWakeLength], dtype=np.float32)
 
-        self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
+        self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
 
         # self.updateFirstWakeRow()
 
@@ -79,8 +79,9 @@ class Blade:
         return
 
     def storeOldGammaBound(self, gammas):
-        for i in range(len(self.centers)):
-            self.oldGammaBound[i] = gammas[i]
+
+        self.oldGammaBound = gammas
+
         return
 
     def updateSheds(self, newGammaBound):
@@ -136,7 +137,7 @@ class Blade:
         uEffectiveInElementRef[:, 1] = 0.
         self.attackAngle = np.arctan2(uEffectiveInElementRef[:, 2], uEffectiveInElementRef[:, 0])
 
-        # I could get rid of this for loop yet...
+        # I could not get rid of this for loop yet...
         for i in range(len(self.centers)):
             self.lift[i] = self.airfoils[i].getLift(self.attackAngle[i])
             self.drag[i] = self.airfoils[i].getDrag(self.attackAngle[i])
@@ -160,17 +161,17 @@ class Blade:
         if(includeBoundFilaments == True):
             length += len(self.centers)
 
-        leftNodes = np.zeros((length,3))
+        leftNodes = np.zeros((length,3), dtype=np.float32)
         leftNodes[:len(self.bladeNodes),:] = self.bladeNodes[:,:]
         leftNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = self.trailingEdgeNode[0:-1,:]
         leftNodes[len(self.bladeNodes)+len(self.centers):,:] = self.bladeNodes[0:-1,:]
 
-        rightNodes = np.zeros((length,3))
+        rightNodes = np.zeros((length,3), dtype=np.float32)
         rightNodes[:len(self.bladeNodes),:] = self.trailingEdgeNode[:,:]
         rightNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = self.trailingEdgeNode[1:]
         rightNodes[len(self.bladeNodes)+len(self.centers):,:] = self.bladeNodes[1:]
 
-        circulations = np.zeros(length)
+        circulations = np.zeros(length, dtype=np.float32)
         circulations[:len(self.bladeNodes)] = self.gammaTrail
         circulations[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers)] = self.gammaShed
         circulations[len(self.bladeNodes)+len(self.centers):] = self.newGammaBound

@@ -56,6 +56,8 @@ class windTurbine:
                 alongAzimuthPosition = r.apply(basicPosition)
                 nodes.append(alongAzimuthPosition + self.hubCenter)
 
+            nodes = np.asarray(nodes, dtype=np.float32)
+
             # Azimuth around x, pitch and twist around y
             for i in range(self.nNodes - 1):
                 r1 = R.from_euler('x', np.degrees(currentAzimuth) + iBlade * 360. / self.nBlades, degrees=True)
@@ -69,7 +71,7 @@ class windTurbine:
 
                 # Evaluate elements translation velocity
                 # Velocity in hub reference frame, assuming not tilt, yaw, etc.
-                centerTranslationVelocity = np.asarray([0., 0., self.rotationalVelocity * centersRadius[i]])
+                centerTranslationVelocity = np.asarray([0., 0., self.rotationalVelocity * centersRadius[i]], dtype=np.float32)
                 # if(i == 20 and iBlade == 0):
                 # print('Azimuth: ', np.degrees(currentAzimuth), self.rotationalVelocity * centersRadius[i], self.bladeRootOrientation[iBlade].apply(centerTranslationVelocity, inverse=True), self.bladeRootOrientation[iBlade].as_matrix())
                 # input()
@@ -88,7 +90,7 @@ class windTurbine:
                 # print("np.dot: ", np.dot(R1, R2))
                 nodesOrientationMatrix.append(np.dot(R1, R2))
 
-                nodeTranslationVelocity = np.asarray([0., 0., self.rotationalVelocity * self.nodesRadius[i]])
+                nodeTranslationVelocity = np.asarray([0., 0., self.rotationalVelocity * self.nodesRadius[i]], dtype=np.float32)
                 # Projection into the "global" reference frame
                 nodeTranslationVelocity = self.bladeRootOrientation[iBlade].apply(nodeTranslationVelocity,
                                                                                   inverse=False)
@@ -124,8 +126,8 @@ class windTurbine:
 
         nbNodes = len(nodesRadius)
         for ib in range(nBlades):
-            self.blades.append( Blade(np.zeros([nbNodes,3]), nodesChord, nearWakeLength, centersAirfoils, np.zeros(nbNodes), np.zeros(nbNodes),
-                  np.zeros(nbNodes), np.zeros(nbNodes)))
+            self.blades.append( Blade(np.zeros([nbNodes,3], dtype=np.float32), nodesChord, nearWakeLength, centersAirfoils, np.zeros(nbNodes, dtype=np.float32), np.zeros(nbNodes, dtype=np.float32),
+                  np.zeros(nbNodes, dtype=np.float32), np.zeros(nbNodes, dtype=np.float32)))
             self.blades[ib].centerChords = .5 * (self.blades[ib].nodeChords[1:] + self.blades[ib].nodeChords[:-1])
 
         blades = self.updateTurbine(0.)
