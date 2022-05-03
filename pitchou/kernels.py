@@ -126,11 +126,11 @@ modFlts = SourceModule("""
 __global__ void bladeOnParticlesKernel(float *destUx, float *destUy, float *destUz, float *ptclePosX, float *ptclePosY, 
                            float *ptclePosZ, float *fltsLeftX, float *fltsLeftY, float *fltsLeftZ,
                            float *fltsRightX, float *fltsRightY, float *fltsRightZ, float *fltsCirculations, 
-                           int numParticles, int numFilaments, float deltaFlts)
+                           float *lengthRegul, int numParticles, int numFilaments, float deltaFlts)
 {
   //Get thread's global index
   int idx = blockDim.x * blockIdx.x + threadIdx.x;
-  //const int idx = threadIdx.x;
+  //
   // Check point index
   if(idx<numParticles){
     float curr_px  , curr_py  , curr_pz;
@@ -140,9 +140,6 @@ __global__ void bladeOnParticlesKernel(float *destUx, float *destUy, float *dest
     curr_pz = ptclePosZ[idx];
     //
     //Loop over all source filaments
-    float uix = 0;
-    float uiy = 0;
-    float uiz = 0;
     // Loop over all source particles
     for(int k=0; k < numFilaments; k++)
     {
@@ -153,25 +150,19 @@ __global__ void bladeOnParticlesKernel(float *destUx, float *destUy, float *dest
         float  pxx2  = curr_px - fltsRightX[k];
         float  pyy2  = curr_py - fltsRightY[k];
         float  pzz2  = curr_pz - fltsRightZ[k];
-        float  fstr  = fltsCirculations[k];
-        float  flen  = sqrt((fltsRightX[k]-fltsLeftX[k])*(fltsRightX[k]-fltsLeftX[k])+
-                          (fltsRightY[k]-fltsLeftY[k])*(fltsRightY[k]-fltsLeftY[k])+
-                          (fltsRightZ[k]-fltsLeftZ[k])*(fltsRightZ[k]-fltsLeftZ[k])
-                          );
-        //
+        //        
         float    r1  = sqrt((pxx1*pxx1 + pyy1*pyy1 + pzz1*pzz1));
         float    r2  = sqrt((pxx2*pxx2 + pyy2*pyy2 + pzz2*pzz2));
         //
-        float r1dr2  = pxx1*pxx2 + pyy1*pyy2 + pzz1*pzz2;
-        float r1tr2  = r1*r2;
+        //float r1dr2  = pxx1*pxx2 + pyy1*pyy2 + pzz1*pzz2;
+        //float r1tr2  = r1*r2;
         //
-        //float delta = 0.5;
-        float   fd = flen*deltaFlts;
-        float   den  = r1tr2*(r1tr2 + r1dr2) + fd*fd;
+        // float   fd = fltsLength[k]*deltaFlts;
+        float   den  = r1*r2*(r1*r2 + pxx1*pxx2 + pyy1*pyy2 + pzz1*pzz2) + lengthRegul[k]; //fd*fd;
         //
         float ubar = 0.;
         if(abs(den) > 1e-32){
-            ubar  = fstr *(r1 + r2) / den;
+          ubar  = fltsCirculations[k] *(r1 + r2) / den;
         }
         destUx[idx] += ubar * (pyy1*pzz2-pzz1*pyy2);
         destUy[idx] += ubar * (pzz1*pxx2-pxx1*pzz2);

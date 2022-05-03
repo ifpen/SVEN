@@ -7,8 +7,6 @@ def interp_checked(altitudes, alltemps, location):
 
     if(idx >= len(altitudes)-1):
         return alltemps[-1]
-    elif(idx == 0):
-        return alltemps[0]
     else:
         x1 = altitudes[idx-1]
         x2 = altitudes[idx]

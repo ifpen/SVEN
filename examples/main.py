@@ -192,38 +192,41 @@ for (it, t) in enumerate(timeSteps):
     timeSimulation += timeStep
     update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
 
-    write_particles(outDir)
-    write_blade_tp(Blades, outDir)
-    write_filaments_tp(Blades, outDir)
+    postProcess = True
+    if(postProcess):
+        write_particles(outDir)
+        write_blade_tp(Blades, outDir)
+        write_filaments_tp(Blades, outDir)
 
-    if (windTurbineCase == True):
-        centers = Blades[0].centers
+        if (windTurbineCase == True):
+            centers = Blades[0].centers
 
-        Fn, Ft = WindTurbine.evaluateForces(1.191) #(1.197)
-        output = open('bladeForces_'+str(it)+'.dat', 'w')
-        for i in range(len(centers)):
-            output.write(str(np.linalg.norm(centers[i])) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
-        output.close()
+            Fn, Ft = WindTurbine.evaluateForces(1.191) #(1.197)
+            output = open('bladeForces_'+str(it)+'.dat', 'w')
+            for i in range(len(centers)):
+                output.write(str(np.linalg.norm(centers[i])) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
+            output.close()
 
-        output = open('liftDistribution.dat', 'w')
-        liftDistribution = Blades[0].lift
-        for i in range(len(centers)):
-            if (windTurbineCase == True):
-                TwistAndPitch = WindTurbine.bladePitch + .5 * (
-                        WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
-                aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
-            else:
-                output = open('liftDistribution.dat', 'w')
-                aoa_th = 0.
-            output.write(str(np.linalg.norm(centers[i])) + ' ' + str(liftDistribution[i]) + ' ' + str(
-                np.degrees(Blades[0].attackAngle[i])) + ' ' + str(Blades[0].effectiveVelocity[i]) + '\n')
-        output.close()
-    else :
-        output = open('liftDistribution_elliptical.dat', 'w')
-        centers = Blades[0].centers
-        liftDistribution = Blades[0].lift
-        for i in range(len(centers)):
-            output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
-        output.close()
+            output = open('liftDistribution.dat', 'w')
+            liftDistribution = Blades[0].lift
+            for i in range(len(centers)):
+                if (windTurbineCase == True):
+                    TwistAndPitch = WindTurbine.bladePitch + .5 * (
+                            WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
+                    aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
+                else:
+                    output = open('liftDistribution.dat', 'w')
+                    aoa_th = 0.
+                output.write(str(np.linalg.norm(centers[i])) + ' ' + str(liftDistribution[i]) + ' ' + str(
+                    np.degrees(Blades[0].attackAngle[i])) + ' ' + str(Blades[0].effectiveVelocity[i]) + '\n')
+            output.close()
+        else :
+            output = open('liftDistribution_elliptical.dat', 'w')
+            centers = Blades[0].centers
+            liftDistribution = Blades[0].lift
+            for i in range(len(centers)):
+                output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
+            output.close()
+print('Total simulation time: ', time.time() - startTime)
 
 
