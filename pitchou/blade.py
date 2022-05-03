@@ -117,12 +117,13 @@ class Blade:
             self.centers[i] = self.centers[i] + dist_to_3_4
         return
 
+    def getLiftDrag(self):
+        return R.from_matrix(self.centersOrientationMatrix)
+
+    # @njit(fastmath=True)
     def estimateGammaBound(self, uInfty, nearWakeInducedVelocities):
 
         relax = 0.05
-
-        newGammaBounds = np.zeros(len(self.centers))
-        newGamma = np.zeros(len(self.centers))
 
         uWind = np.zeros(3)
         uWind[0] = uInfty
