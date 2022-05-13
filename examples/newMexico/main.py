@@ -24,11 +24,11 @@ def NewMexicoWindTurbine():
     bladePitch = sign * 0.040143
     nearWakeLength = 359
 
-    dataAirfoils = np.genfromtxt('../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
+    dataAirfoils = np.genfromtxt('../../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
                                  dtype='U')
     intAirfoils = np.arange(0, len(dataAirfoils))
 
-    data = np.genfromtxt('../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
+    data = np.genfromtxt('../../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
 
     refRadius = data[:,2] #np.linspace(0., 2.04, 45) # data[:,2]
 
@@ -40,7 +40,7 @@ def NewMexicoWindTurbine():
     centersAirfoils = []
     for i in range(len(refRadius)):
         foilName = str(dataAirfoils[int(f(refRadius[i]))])
-        centersAirfoils.append(Airfoil('../turbineModels/NewMexico/reference_files/' + foilName, headerLength=1))
+        centersAirfoils.append(Airfoil('../../turbineModels/NewMexico/reference_files/' + foilName, headerLength=1))
 
     nodesRadius = hubRadius + refRadius
     nodesTwistAngles = np.interp(refRadius, data[:, 2], inputNodesTwistAngles)
@@ -109,7 +109,6 @@ def EllipticalWing(bladePitch):
 def write_particles(outDir):
     output = open(outDir + '/New_Particles_tStep_' + str(it) + '.particles', 'w')
     for i in range(len(wake.particlesPositionX)):
-        # if (wake.particlesVorticityX[i] +wake.particlesVorticityY[i] +wake.particlesVorticityZ[i] > 1e-6):
         output.write(str(wake.particlesPositionX[i]) + " " + str(wake.particlesPositionY[i]) + " " + str(
             wake.particlesPositionZ[i]) + " " + "\n")
     output.close()
@@ -123,11 +122,11 @@ def write_filaments_tp(blades, outDir):
 
         output = open(outDir + '/Filaments_Nodes_' + '_Blade_'+str(iBlade)+'_tStep_'+str(it)+'.tp', 'w')
         output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z"\n')
-        output.write('ZONE T="Near-wake" I='+str(shape[0])+' J='+str(shape[1])+', K=1, DT=(SINGLE SINGLE SINGLE)\n')
-        for j in range(np.shape(blade.wakeNodes)[1]):
+        output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
+        output.write('ZONE T="Near-wake" I='+str(shape[0])+' J='+str(shape[1]-1)+', K=1, DT=(SINGLE SINGLE SINGLE SINGLE)\n')
+        for j in range(np.shape(blade.wakeNodes)[1]-1):
             for i in range(np.shape(blade.wakeNodes)[0]):
-                output.write(str(blade.wakeNodes[i,j,0]) + " " + str(blade.wakeNodes[i,j,1]) + " " + str(blade.wakeNodes[i,j,2]) + "\n")
+                output.write(str(blade.wakeNodes[i,j,0]) + " " + str(blade.wakeNodes[i,j,1]) + " " + str(blade.wakeNodes[i,j,2]) + " " +str(blade.trailFilamentsCirculation[i,j]) + "\n")
         output.close()
 
     return
@@ -160,7 +159,6 @@ if(windTurbineCase == True):
     innerIter  = 12
     nRotations = 10.
     timeEnd = np.radians(nRotations * 360.) / WindTurbine.rotationalVelocity
-    # timeEnd = np.radians(0.5 * 360.) / WindTurbine.rotationalVelocity
     eps_conv = 1e-4
 
     refAzimuth = -WindTurbine.rotationalVelocity * timeStep
@@ -192,7 +190,7 @@ for (it, t) in enumerate(timeSteps):
     timeSimulation += timeStep
     update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
 
-    postProcess = True
+    postProcess = False
     if(postProcess):
         write_particles(outDir)
         write_blade_tp(Blades, outDir)
@@ -202,12 +200,12 @@ for (it, t) in enumerate(timeSteps):
             centers = Blades[0].centers
 
             Fn, Ft = WindTurbine.evaluateForces(1.191) #(1.197)
-            output = open('bladeForces_'+str(it)+'.dat', 'w')
+            output = open('outputs/bladeForces_'+str(it)+'.dat', 'w')
             for i in range(len(centers)):
                 output.write(str(np.linalg.norm(centers[i])) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
             output.close()
 
-            output = open('liftDistribution.dat', 'w')
+            output = open('outputs/liftDistribution.dat', 'w')
             liftDistribution = Blades[0].lift
             for i in range(len(centers)):
                 if (windTurbineCase == True):
@@ -215,7 +213,7 @@ for (it, t) in enumerate(timeSteps):
                             WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
                     aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
                 else:
-                    output = open('liftDistribution.dat', 'w')
+                    output = open('outputs/liftDistribution.dat', 'w')
                     aoa_th = 0.
                 output.write(str(np.linalg.norm(centers[i])) + ' ' + str(liftDistribution[i]) + ' ' + str(
                     np.degrees(Blades[0].attackAngle[i])) + ' ' + str(Blades[0].effectiveVelocity[i]) + '\n')
