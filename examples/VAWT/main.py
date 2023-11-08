@@ -81,7 +81,7 @@ def VAWT():
     return blades, myWT, windVelocity, 0.01, 1e-4
 
 
-def test(bladePitch, rotorRadius, wingType = "Rectangular"):
+def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, wingType = "Rectangular"):
 
     if (wingType != "Elliptical" and wingType != "Rectangular"):
         print("Non-existing wing type: ", wingType, " please use \"Elliptical\" or \"Rectangular\"")
@@ -90,7 +90,7 @@ def test(bladePitch, rotorRadius, wingType = "Rectangular"):
     nBladeCenters = 50
     nearWakeLength = 1000
 
-    bladeLength = 30.
+    #bladeLength = 30.
     if (wingType == "Elliptical"):
         AR = 8.
         cRoot = 4 * bladeLength / (AR * np.pi)
@@ -100,64 +100,80 @@ def test(bladePitch, rotorRadius, wingType = "Rectangular"):
         cRoot = 2. / np.pi * bladeLength / P
         # cRoot = bladeLength / AR
 
-    cRoot = 4.
-    print(2. / np.pi * bladeLength / cRoot)
-    # input()
-
+    cRoot = 4. / nBlades
     uInfty = 6.
 
-    # Multiple straight wings
-    nodes = np.zeros([nBladeCenters + 1, 3])
-    nodes[:, 2] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
-    nodes[:, 1] = rotorRadius
-
-    if (wingType == "Rectangular"):
-        nodeChords = np.ones_like(nodes[:, 0]) * cRoot
-    elif (wingType == "Elliptical"):
-        nodeChords = np.zeros(len(nodes))
-        for i in range(len(nodes)):
-            nodeChords[i] = np.sqrt(np.abs(cRoot ** 2. * (1. - 4. * (nodes[i, 1] / bladeLength) ** 2.)))
-
+    nodeChords = np.ones(nBladeCenters + 1) * cRoot
     airfoils = []
-    for i in range(len(nodes) - 1):
+    for i in range(nBladeCenters):
         airfoils.append(Airfoil('../../data/flatPlate.foil'))
 
-    bladePitch = 10.
-    centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
-    for i in range(len(nodes) - 1):
-        r1 = R.from_euler('x', 90., degrees=True)
-        r2 = R.from_euler('y', bladePitch, degrees=True)
-        R1 = r1.as_matrix()
-        R2 = r2.as_matrix()
-
-        centersOrientationMatrix[i] = np.dot(R1, R2)
-
-    nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
-    for i in range(len(nodes)):
-        r1 = R.from_euler('x', 90., degrees=True)
-        r2 = R.from_euler('y', bladePitch, degrees=True)
-        R1 = r1.as_matrix()
-        R2 = r2.as_matrix()
-        nodesOrientationMatrix[i] = np.dot(R1, R2)
-
-    liftingLine1 = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
-                         np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
-
-    liftingLine1.updateFirstWakeRow()
-    liftingLine1.initializeWake()
+    # Multiple straight wings
+    initialNodes = np.zeros([nBladeCenters + 1, 3])
+    initialNodes[:, 2] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
+    initialNodes[:, 1] = rotorRadius
 
     Blades = []
-    Blades.append(liftingLine1)
+    dAz = 2.*np.pi / nBlades
+    for ib in range(nBlades):
+
+        azimuth = ib * dAz
+
+        print('INITIAL BLADE NODES: ', initialNodes)
+
+        nodes = np.copy(initialNodes)
+        # Rotate them with the azimuth
+        for i in range(len(initialNodes[:,0])):
+
+            x = initialNodes[i,0]
+            y = initialNodes[i,1]
+
+            nodes[i,0] = x * np.cos(azimuth) - y * np.sin(azimuth)
+            nodes[i,1] = x * np.sin(azimuth) + y * np.cos(azimuth)
+            print(i, x, y, nodes[i,0], nodes[i,1])
+
+        # print('nodes: ', nodes, ' azimuth= ', np.degrees(azimuth))
+        # print()
+
+        bladePitch = 0.
+        centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
+        for i in range(len(nodes) - 1):
+            r1 = R.from_euler('x', 90., degrees=True)
+            r2 = R.from_euler('y', bladePitch+azimuth, degrees=True)
+            R1 = r1.as_matrix()
+            R2 = r2.as_matrix()
+
+            centersOrientationMatrix[i] = np.dot(R1, R2)
+
+        nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
+        for i in range(len(nodes)):
+            r1 = R.from_euler('x', 90., degrees=True)
+            r2 = R.from_euler('y', bladePitch+azimuth, degrees=True)
+            R1 = r1.as_matrix()
+            R2 = r2.as_matrix()
+            nodesOrientationMatrix[i] = np.dot(R1, R2)
+
+        liftingLine = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
+                             np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
+        print('FINAL BLADE NODES: ', liftingLine.bladeNodes)
+        liftingLine.updateFirstWakeRow()
+        liftingLine.initializeWake()
+
+        Blades.append(liftingLine)
+
+    updateWing(Blades, 0, 0, 0., rotationSpeed)
 
     deltaFlts = 1e-2 #np.sqrt(1e-2)
 
-    print('Solidity: ', 1. * nodeChords[0] / 2. / rotorRadius)
+    print('Solidity: ', nBlades * nodeChords[0] / 2. / rotorRadius)
     print('TSR     : ', 9.*np.pi/30 * rotorRadius / uInfty)
     input()
 
     return Blades, uInfty, deltaFlts
 
 def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
+    #
+    nBlades = len(Blades)
     #
     print('########### Azimuth, attack angle: ', np.degrees(azimuth), np.degrees(Blades[0].attackAngle[25]))
     #
@@ -167,78 +183,63 @@ def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
     #
     n0[2] = 0.
     rotorRadius = np.linalg.norm(n0)
-    #bladeLength = 30. #np.linalg.norm(Blades[0].bladeNodes[-1,:]-Blades[0].bladeNodes[0,:])
     #
     elementVelocity = np.zeros(3)
     elementVelocity[0] = - rotationSpeed * rotorRadius
-    # Multiple straight wings
-    nCenters = len(Blades[0].centers)
-    nodes = np.zeros([nCenters + 1, 3])
 
-    # z positions do not change
-    nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
+    for (ib,blade) in enumerate(Blades):
 
-    # initial positions:
-    nodes[:, 1] = rotorRadius
-    nodes[:, 0] = 0.
-    # Rotate them with the azimuth
-    for i in range(len(nodes[:,0])):
-        x = nodes[i,0]
-        y = nodes[i,1]
+        dAz = ib * 2.*np.pi / nBlades
 
-        nodes[i,0] = x * np.cos(azimuth) - y * np.sin(azimuth)
-        nodes[i,1] = x * np.sin(azimuth) + y * np.cos(azimuth)
+        # Multiple straight wings
+        nCenters = len(blade.centers)
+        nodes = np.zeros([nCenters + 1, 3])
 
-    Blades[0].bladeNodes = nodes
-    Blades[0].centers = .5 * (nodes[1:] + nodes[:-1])
+        # z positions do not change
+        nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
+        # initial positions:
+        nodes[:, 1] = rotorRadius
+        nodes[:, 0] = 0.
+        # Rotate them with the azimuth
+        for i in range(len(nodes[:,0])):
+            x = nodes[i,0]
+            y = nodes[i,1]
+
+            nodes[i,0] = x * np.cos(azimuth+dAz) - y * np.sin(azimuth+dAz)
+            nodes[i,1] = x * np.sin(azimuth+dAz) + y * np.cos(azimuth+dAz)
+
+        blade.bladeNodes = nodes
+        blade.centers = .5 * (nodes[1:] + nodes[:-1])
 
 
-    # Update orientation matrices and velocities
-    centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
-    centersVelocities = np.zeros([len(nodes) - 1, 3])
-    for i in range(len(nodes) - 1):
-        r1 = R.from_euler('x', 90., degrees=True)
-        r2 = R.from_euler('y', np.degrees(azimuth), degrees=True)
-        R1 = r1.as_matrix()
-        R2 = r2.as_matrix()
-        centersOrientationMatrix[i] = np.dot(R1, R2)
+        # Update orientation matrices and velocities
+        centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
+        centersVelocities = np.zeros([len(nodes) - 1, 3])
+        for i in range(len(nodes) - 1):
+            r1 = R.from_euler('x', 90., degrees=True)
+            r2 = R.from_euler('y', np.degrees(azimuth), degrees=True)
+            R1 = r1.as_matrix()
+            R2 = r2.as_matrix()
+            centersOrientationMatrix[i] = np.dot(R1, R2)
 
-        r = R.from_matrix(centersOrientationMatrix[i])
-        centersVelocities[i,:] = r.apply(elementVelocity, inverse=False)
-    Blades[0].centersOrientationMatrix = centersOrientationMatrix
-    Blades[0].centersTranslationVelocity = centersVelocities
+            r = R.from_matrix(centersOrientationMatrix[i])
+            centersVelocities[i,:] = r.apply(elementVelocity, inverse=False)
+        blade.centersOrientationMatrix = centersOrientationMatrix
+        blade.centersTranslationVelocity = centersVelocities
 
-    nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
-    nodesVelocities = np.zeros([len(nodes), 3])
-    for i in range(len(nodes)):
-        r1 = R.from_euler('x', 90., degrees=True)
-        r2 = R.from_euler('y', np.degrees(azimuth), degrees=True)
-        R1 = r1.as_matrix()
-        R2 = r2.as_matrix()
-        nodesOrientationMatrix[i] = np.dot(R1, R2)
+        nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
+        nodesVelocities = np.zeros([len(nodes), 3])
+        for i in range(len(nodes)):
+            r1 = R.from_euler('x', 90., degrees=True)
+            r2 = R.from_euler('y', np.degrees(azimuth), degrees=True)
+            R1 = r1.as_matrix()
+            R2 = r2.as_matrix()
+            nodesOrientationMatrix[i] = np.dot(R1, R2)
 
-        r = R.from_matrix(nodesOrientationMatrix[i])
-        nodesVelocities[i,:] = r.apply(elementVelocity, inverse=False)
-    Blades[0].nodesOrientationMatrix = nodesOrientationMatrix
-    Blades[0].nodesTranslationVelocities = nodesVelocities
-
-    # Multiple straight wings
-    #nodes = np.zeros([nBladeCenters + 1, 3])
-    #nodes[:, 2] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
-
-    # centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
-    # for i in range(len(nodes) - 1):
-    #     r = R.from_euler('y', bladePitch, degrees=True)
-    #     centersOrientationMatrix[i] = r.as_matrix()
-    #
-    # nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
-    # for i in range(len(nodes)):
-    #     r = R.from_euler('y', bladePitch, degrees=True)
-    #     nodesOrientationMatrix[i] = r.as_matrix()
-    #
-    # #liftingLine1 = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
-    # #                     centersTranslationVelocity, nodesTranslationVelocity))
-
+            r = R.from_matrix(nodesOrientationMatrix[i])
+            nodesVelocities[i,:] = r.apply(elementVelocity, inverse=False)
+        blade.nodesOrientationMatrix = nodesOrientationMatrix
+        blade.nodesTranslationVelocities = nodesVelocities
 
     return
 
@@ -301,15 +302,20 @@ if(windTurbineCase == True):
 
     timeSteps = np.arange(0., timeEnd, timeStep)
 else:
+    nBlades = 3 # input, integer
     rotationRPM = 9. # input
     nRotations = 4.  # input
+    rotorRadius = 20. # input
     rotationSpeed = rotationRPM * np.pi / 30.
     timeOneRotation = 60. / rotationRPM
     timeStep = timeOneRotation / 36.
     timeEnd  = timeOneRotation * nRotations
     innerIter = 10
     timeSteps = np.arange(0., timeEnd, timeStep)
-    Blades, uInfty, deltaFlts = test(5., 20.)
+    bladePitch = 0.
+    bladeLength = 30.
+    Blades, uInfty, deltaFlts = VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, "Rectangular")
+
     deltaPtcles = 1e-4
 
 wake = Wake()
