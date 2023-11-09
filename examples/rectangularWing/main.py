@@ -23,13 +23,18 @@ def Wing(bladePitch, wingType):
     nBladeCenters = 50
     nearWakeLength = 1000
 
-    AR = 8.
     bladeLength = 2.
     if(wingType == "Elliptical"):
+        AR = 8.
         cRoot = 4 * bladeLength / (AR * np.pi)    
     elif(wingType == "Rectangular"):
-        cRoot = bladeLength / AR 
-        
+        P = 6.
+        # P = 2. / np.pi * bladeLength / cRoot
+        cRoot = 2. / np.pi * bladeLength / P
+        # cRoot = bladeLength / AR
+    print(2./np.pi * bladeLength / cRoot)
+    # input()
+
     uInfty = 1.
 
     # Multiple straight wings
@@ -112,7 +117,8 @@ def write_blade_tp(blades, outDir):
         output.close()
     return
 
-Blades, uInfty, deltaFlts = Wing(5., "Rectangular")
+wingType = "Rectangular"
+Blades, uInfty, deltaFlts = Wing(5., wingType)
 
 nodes = Blades[0].bladeNodes
 nNodes = len(nodes)
@@ -123,7 +129,7 @@ meanDistance = np.mean(distances)
 
 relax = 0.5
 timeStep = meanDistance / uInfty * relax #0.025
-timeEnd  = 10.
+timeEnd  = 5.
 innerIter = 10
 timeSteps = np.arange(0., timeEnd, timeStep)
 
@@ -149,11 +155,21 @@ for (it, t) in enumerate(timeSteps):
         write_blade_tp(Blades, outDir)
         write_filaments_tp(Blades, outDir)
 
-        output = open('liftDistribution_rectangular.dat', 'w')
+        if(wingType == "Elliptical"):
+            output = open('liftDistribution_elliptical.dat', 'w')
+        else:
+            output = open('liftDistribution_rectangular.dat', 'w')
         centers = Blades[0].centers
-        liftDistribution = Blades[0].lift
+        liftDistribution = Blades[0].gammaBound
         for i in range(len(centers)):
-            output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
+            G0 = 0.07 # 0.4659
+            bladeLength = 2.
+
+            if(wingType == 'Elliptical'):
+                theory = G0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.) # .5*(cl0+cl0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.))
+            else:
+                theory = .5 * (G0 + G0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.) )
+            output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + ' ' + str(theory) + '\n')
         output.close()
 print('Total simulation time: ', time.time() - startTime)
 
