@@ -133,7 +133,7 @@ def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, win
 
     updateWing(Blades, 0, 0, 0., rotationSpeed)
 
-    deltaFlts = 1e0  # np.sqrt(1e-2)
+    deltaFlts = 5e-2  # np.sqrt(1e-2)
 
     print('Solidity: ', nBlades * nodeChords[0] / 2. / rotorRadius)
     print('TSR     : ', rotationSpeed * rotorRadius / windVelocity)
@@ -145,6 +145,7 @@ def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, win
 def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
     #
     nBlades = len(Blades)
+    print('NBLADES', nBlades)
     #
     print('########### Azimuth, attack angle: ', np.degrees(azimuth), np.degrees(Blades[0].attackAngle[25]))
     #
@@ -161,6 +162,7 @@ def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
     for (ib, blade) in enumerate(Blades):
 
         dAz = ib * 2. * np.pi / nBlades
+        print('DELTA AZIMUTH: ', np.degrees(dAz))
 
         # Multiple straight wings
         nCenters = len(blade.centers)
@@ -179,37 +181,37 @@ def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
             nodes[i, 0] = x * np.cos(azimuth + dAz) - y * np.sin(azimuth + dAz)
             nodes[i, 1] = x * np.sin(azimuth + dAz) + y * np.cos(azimuth + dAz)
 
-        blade.bladeNodes = nodes
-        blade.centers = .5 * (nodes[1:] + nodes[:-1])
+        Blades[ib].bladeNodes = nodes
+        Blades[ib].centers = .5 * (nodes[1:] + nodes[:-1])
 
         # Update orientation matrices and velocities
         centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
         centersVelocities = np.zeros([len(nodes) - 1, 3])
         for i in range(len(nodes) - 1):
             r1 = R.from_euler('x', 90., degrees=True)
-            r2 = R.from_euler('y', np.degrees(azimuth), degrees=True)
+            r2 = R.from_euler('y', np.degrees(azimuth + dAz), degrees=True)
             R1 = r1.as_matrix()
             R2 = r2.as_matrix()
             centersOrientationMatrix[i] = np.dot(R1, R2)
 
             r = R.from_matrix(centersOrientationMatrix[i])
             centersVelocities[i, :] = r.apply(elementVelocity, inverse=False)
-        blade.centersOrientationMatrix = centersOrientationMatrix
-        blade.centersTranslationVelocity = centersVelocities
+        Blades[ib].centersOrientationMatrix = centersOrientationMatrix
+        Blades[ib].centersTranslationVelocity = centersVelocities
 
         nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
         nodesVelocities = np.zeros([len(nodes), 3])
         for i in range(len(nodes)):
             r1 = R.from_euler('x', 90., degrees=True)
-            r2 = R.from_euler('y', np.degrees(azimuth), degrees=True)
+            r2 = R.from_euler('y', np.degrees(azimuth + dAz), degrees=True)
             R1 = r1.as_matrix()
             R2 = r2.as_matrix()
             nodesOrientationMatrix[i] = np.dot(R1, R2)
 
             r = R.from_matrix(nodesOrientationMatrix[i])
             nodesVelocities[i, :] = r.apply(elementVelocity, inverse=False)
-        blade.nodesOrientationMatrix = nodesOrientationMatrix
-        blade.nodesTranslationVelocities = nodesVelocities
+        Blades[ib].nodesOrientationMatrix = nodesOrientationMatrix
+        Blades[ib].nodesTranslationVelocities = nodesVelocities
 
     return
 
@@ -261,16 +263,16 @@ def write_blade_tp(blades, outDir):
     return
 
 inputs = [
- {'nBlades':1, 'TSR':5.0, 'uInfs':0.091},
- #{'nBlades':2, 'TSR':2.5, 'uInfs':0.183},
- #{'nBlades':2, 'TSR':5.0, 'uInfs':0.091},
- {'nBlades':2, 'TSR':7.5, 'uInfs':0.061}
- #{'nBlades':3, 'TSR':5.0, 'uInfs':0.091},
- #{'nBlades':1, 'TSR':5.0, 'uInfs':0.091},
- #{'nBlades':2, 'TSR':2.5, 'uInfs':0.183},
- #{'nBlades':2, 'TSR':5.0, 'uInfs':0.091},
- #{'nBlades':2, 'TSR':7.5, 'uInfs':0.061},
- #{'nBlades':3, 'TSR':5.0, 'uInfs':0.091}
+ #{'nBlades': 3, 'TSR': 5.0},
+ #{'nBlades':1, 'TSR':5.0},
+ #{'nBlades':2, 'TSR':2.5},
+ #{'nBlades':2, 'TSR':5.0},
+ #{'nBlades':2, 'TSR':7.5},
+ #{'nBlades':3, 'TSR':5.0},
+ #{'nBlades':1, 'TSR':5.0},
+ #{'nBlades':2, 'TSR':2.5},
+ #{'nBlades':2, 'TSR':5.0},
+ {'nBlades':2, 'TSR':7.5}
 ]
 
 for input in inputs:
@@ -281,7 +283,16 @@ for input in inputs:
     bladeLength = 0.914
     bladePitch = 0.
     TSR = input['TSR']
-    windVelocity = input['uInfs'] #18.3 * 1e-2
+    #windVelocity = input['uInfs'] #18.3 * 1e-2
+    if (TSR == 2.5):
+        windVelocity = 18.3e-2
+    elif (TSR == 5.0):
+        windVelocity = 9.1 * 1e-2
+    elif(TSR == 7.5):
+        windVelocity = 6.1 * 1e-2
+    else:
+        print('TSR not recognized!')
+        exit(1)
 
     # Pre-processing
     rotationRPM = TSR * windVelocity / rotorRadius * 30. / np.pi
