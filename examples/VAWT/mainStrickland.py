@@ -52,6 +52,11 @@ def writeHubAndTower():
     out.close()
     return
 
+def CosineNodesDistribution(nPoints):
+    xis = np.linspace(-np.pi, 0., nPoints + 1)
+    return .5 * (np.cos(xis) + 1.)
+
+
 def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity):
     # if (wingType != "Elliptical" and wingType != "Rectangular"):
     #     print("Non-existing wing type: ", wingType, " please use \"Elliptical\" or \"Rectangular\"")
@@ -81,6 +86,11 @@ def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, win
     # Multiple straight wings
     initialNodes = np.zeros([nBladeCenters + 1, 3])
     initialNodes[:, 2] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
+    #print('v0: ', initialNodes[:, 2])
+    initialNodes[:, 2] = np.asarray((CosineNodesDistribution(nBladeCenters) - 0.5) * bladeLength)
+    #print('v1: ', initialNodes[:, 2])
+    #input()
+
     initialNodes[:, 1] = rotorRadius
 
     Blades = []
@@ -162,14 +172,15 @@ def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
     for (ib, blade) in enumerate(Blades):
 
         dAz = ib * 2. * np.pi / nBlades
-        print('DELTA AZIMUTH: ', np.degrees(dAz))
 
         # Multiple straight wings
         nCenters = len(blade.centers)
         nodes = np.zeros([nCenters + 1, 3])
 
         # z positions do not change
-        nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
+        #nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
+        nodes[:, 2] = np.asarray((CosineNodesDistribution(nCenters) - 0.5) * bladeLength)
+
         # initial positions:
         nodes[:, 1] = rotorRadius
         nodes[:, 0] = 0.
@@ -263,15 +274,15 @@ def write_blade_tp(blades, outDir):
     return
 
 inputs = [
- #{'nBlades': 3, 'TSR': 5.0},
- #{'nBlades':1, 'TSR':5.0},
- #{'nBlades':2, 'TSR':2.5},
- #{'nBlades':2, 'TSR':5.0},
- #{'nBlades':2, 'TSR':7.5},
- #{'nBlades':3, 'TSR':5.0},
- #{'nBlades':1, 'TSR':5.0},
- #{'nBlades':2, 'TSR':2.5},
- #{'nBlades':2, 'TSR':5.0},
+ {'nBlades': 3, 'TSR': 5.0},
+ {'nBlades':1, 'TSR':5.0},
+ {'nBlades':2, 'TSR':2.5},
+ {'nBlades':2, 'TSR':5.0},
+ {'nBlades':2, 'TSR':7.5},
+ {'nBlades':3, 'TSR':5.0},
+ {'nBlades':1, 'TSR':5.0},
+ {'nBlades':2, 'TSR':2.5},
+ {'nBlades':2, 'TSR':5.0},
  {'nBlades':2, 'TSR':7.5}
 ]
 
