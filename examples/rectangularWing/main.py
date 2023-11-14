@@ -14,24 +14,28 @@ if not os.path.exists(outDir):
 else:
     print("Directory ", outDir, " already exists")
 
-def Wing(bladePitch, wingType):    
+def Wing(bladePitch, wingType, aspectRatio, nIterations):    
     
     if(wingType != "Elliptical" and wingType != "Rectangular"):
         print("Non-existing wing type: ", wingType, " please use \"Elliptical\" or \"Rectangular\"")
     
     # Blade discretisation
     nBladeCenters = 50
-    nearWakeLength = 1000
+    nearWakeLength = nIterations
 
     bladeLength = 2.
     if(wingType == "Elliptical"):
         AR = 8.
         cRoot = 4 * bladeLength / (AR * np.pi)    
     elif(wingType == "Rectangular"):
-        P = 6.
+        #P = 6.
         # P = 2. / np.pi * bladeLength / cRoot
-        cRoot = 2. / np.pi * bladeLength / P
+        #cRoot = 2. / np.pi * bladeLength / P
         # cRoot = bladeLength / AR
+        
+        AR = aspectRatio
+        cRoot = bladeLength / AR
+        
     print(2./np.pi * bladeLength / cRoot)
     # input()
 
@@ -118,59 +122,67 @@ def write_blade_tp(blades, outDir):
     return
 
 wingType = "Rectangular"
-Blades, uInfty, deltaFlts = Wing(5., wingType)
+bladePitch = 5.
 
-nodes = Blades[0].bladeNodes
-nNodes = len(nodes)
-distances = np.zeros(len(nodes)-1)
-for i in range(len(nodes)-1):
-    distances[i] = np.linalg.norm( nodes[i+1,:] - nodes[i,:] )
-meanDistance = np.mean(distances)
+aspectRatios = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
+for aspectRatio in aspectRatios:
+    #aspectRatio = 20
 
-relax = 0.5
-timeStep = meanDistance / uInfty * relax #0.025
-timeEnd  = 5.
-innerIter = 10
-timeSteps = np.arange(0., timeEnd, timeStep)
+    BladesTmp, uInfty, deltaFlts = Wing(bladePitch, wingType, aspectRatio, 1) # Initialze the blade without time step knowledge
 
-deltaPtcles = 1e-4
-partsPerFil = 1
+    nodes = BladesTmp[0].bladeNodes
+    nNodes = len(nodes)
+    distances = np.zeros(len(nodes)-1)
+    for i in range(len(nodes)-1):
+        distances[i] = np.linalg.norm( nodes[i+1,:] - nodes[i,:] )
+    meanDistance = np.mean(distances)
 
-wake = Wake()
+    relax = 0.5
+    timeStep = meanDistance / uInfty * relax #0.025
+    timeEnd  = 15.
+    innerIter = 10
+    timeSteps = np.arange(0., timeEnd, timeStep)
 
-eps_conv = 1e-4
+    Blades, uInfty, deltaFlts = Wing(bladePitch, wingType, aspectRatio, len(timeSteps))
 
-timeSimulation = 0.
+    deltaPtcles = 1e-4
+    partsPerFil = 1
 
-startTime = time.time()
-for (it, t) in enumerate(timeSteps):
+    wake = Wake()
 
-    print('iteration, time, finaltime: ', it, t, timeSteps[-1])
-    timeSimulation += timeStep
-    update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
+    eps_conv = 1e-4
 
-    postProcess = True
-    if(postProcess):
-        write_particles(outDir)
-        write_blade_tp(Blades, outDir)
-        write_filaments_tp(Blades, outDir)
+    timeSimulation = 0.
 
-        if(wingType == "Elliptical"):
-            output = open('liftDistribution_elliptical.dat', 'w')
-        else:
-            output = open('liftDistribution_rectangular.dat', 'w')
-        centers = Blades[0].centers
-        liftDistribution = Blades[0].gammaBound
-        for i in range(len(centers)):
-            G0 = 0.07 # 0.4659
-            bladeLength = 2.
+    startTime = time.time()
+    for (it, t) in enumerate(timeSteps):
 
-            if(wingType == 'Elliptical'):
-                theory = G0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.) # .5*(cl0+cl0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.))
+        print('iteration, time, finaltime: ', it, t, timeSteps[-1])
+        timeSimulation += timeStep
+        update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
+
+        postProcess = True
+        if(postProcess):
+            write_particles(outDir)
+            write_blade_tp(Blades, outDir)
+            write_filaments_tp(Blades, outDir)
+
+            if(wingType == "Elliptical"):
+                output = open('liftDistribution_elliptical.dat', 'w')
             else:
-                theory = .5 * (G0 + G0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.) )
-            output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + ' ' + str(theory) + '\n')
-        output.close()
-print('Total simulation time: ', time.time() - startTime)
+                output = open('liftDistribution_rectangular_AR'+str(aspectRatio)+'.dat', 'w')
+            centers = Blades[0].centers
+            liftDistribution = Blades[0].lift / (2.*np.pi*np.radians(bladePitch))
+            for i in range(len(centers)):
+                output.write(str(centers[i][1]/2.+0.5) + ' ' + str(liftDistribution[i]) + '\n')
+            output.close()
+            
+                #G0 = 0.07 # 0.4659
+                #bladeLength = 2.
+                #if(wingType == 'Elliptical'):
+                    #theory = G0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.) # .5*(cl0+cl0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.))
+                #else:
+                    #theory = .5 * (G0 + G0 * np.sqrt(1.-(2.*np.abs(centers[i][1])/bladeLength)**2.) )        
+    print('Total simulation time: ', time.time() - startTime)
 
 

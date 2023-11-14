@@ -1,18 +1,12 @@
 import os
 
+import matplotlib.pyplot as plt
+
 from pitchou.windTurbine import *
 from pitchou.airfoil import *
 from pitchou.blade import *
 from pitchou.solver import *
 from scipy import interpolate
-
-# Post-processing directory
-# Create target directory & all intermediate directories if don't exists
-outDir = 'outputs'
-if not os.path.exists(outDir):
-    os.makedirs(outDir)
-else:
-    print("Directory ", outDir, " already exists")
 
 
 def writeHubAndTower():
@@ -57,24 +51,10 @@ def CosineNodesDistribution(nPoints):
     return .5 * (np.cos(xis) + 1.)
 
 
-def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity):
-    # if (wingType != "Elliptical" and wingType != "Rectangular"):
-    #     print("Non-existing wing type: ", wingType, " please use \"Elliptical\" or \"Rectangular\"")
-
+def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity, nIters):
     # Blade discretisation
-    nBladeCenters = 50
-    nearWakeLength = 1000
-
-    # if (wingType == "Elliptical"):
-    #     AR = 8.
-    #     cRoot = 4 * bladeLength / (AR * np.pi)
-    # elif (wingType == "Rectangular"):
-    #     P = 6.
-    #     # P = 2. / np.pi * bladeLength / cRoot
-    #     cRoot = 2. / np.pi * bladeLength / P
-    #     # cRoot = bladeLength / AR
-    # cRoot = 4. / nBlades
-    # uInfty = 6.
+    nBladeCenters = 150
+    nearWakeLength = nIters
 
     cRoot = 0.0914
 
@@ -86,11 +66,7 @@ def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, win
     # Multiple straight wings
     initialNodes = np.zeros([nBladeCenters + 1, 3])
     initialNodes[:, 2] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
-    #print('v0: ', initialNodes[:, 2])
-    initialNodes[:, 2] = np.asarray((CosineNodesDistribution(nBladeCenters) - 0.5) * bladeLength)
-    #print('v1: ', initialNodes[:, 2])
-    #input()
-
+    #initialNodes[:, 2] = np.asarray((CosineNodesDistribution(nBladeCenters) - 0.5) * bladeLength)
     initialNodes[:, 1] = rotorRadius
 
     Blades = []
@@ -109,10 +85,6 @@ def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, win
 
             nodes[i, 0] = x * np.cos(azimuth) - y * np.sin(azimuth)
             nodes[i, 1] = x * np.sin(azimuth) + y * np.cos(azimuth)
-            print(i, x, y, nodes[i, 0], nodes[i, 1])
-
-        # print('nodes: ', nodes, ' azimuth= ', np.degrees(azimuth))
-        # print()
 
         bladePitch = 0.
         centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
@@ -143,7 +115,7 @@ def VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, win
 
     updateWing(Blades, 0, 0, 0., rotationSpeed)
 
-    deltaFlts = 5e-2  # np.sqrt(1e-2)
+    deltaFlts = 1e-2  # np.sqrt(1e-2)
 
     print('Solidity: ', nBlades * nodeChords[0] / 2. / rotorRadius)
     print('TSR     : ', rotationSpeed * rotorRadius / windVelocity)
@@ -178,8 +150,8 @@ def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
         nodes = np.zeros([nCenters + 1, 3])
 
         # z positions do not change
-        #nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
-        nodes[:, 2] = np.asarray((CosineNodesDistribution(nCenters) - 0.5) * bladeLength)
+        nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
+        #nodes[:, 2] = np.asarray((CosineNodesDistribution(nCenters) - 0.5) * bladeLength)
 
         # initial positions:
         nodes[:, 1] = rotorRadius
@@ -274,17 +246,20 @@ def write_blade_tp(blades, outDir):
     return
 
 inputs = [
- {'nBlades': 3, 'TSR': 5.0},
+ {'nBlades':1, 'TSR':2.5},
  {'nBlades':1, 'TSR':5.0},
- {'nBlades':2, 'TSR':2.5},
- {'nBlades':2, 'TSR':5.0},
- {'nBlades':2, 'TSR':7.5},
- {'nBlades':3, 'TSR':5.0},
- {'nBlades':1, 'TSR':5.0},
- {'nBlades':2, 'TSR':2.5},
- {'nBlades':2, 'TSR':5.0},
- {'nBlades':2, 'TSR':7.5}
+ {'nBlades':1, 'TSR':7.5}
+ #{'nBlades': 3, 'TSR': 5.0},
+ #{'nBlades':2, 'TSR':2.5},
+ #{'nBlades':2, 'TSR':5.0},
+ #{'nBlades':2, 'TSR':7.5},
+ #{'nBlades':3, 'TSR':5.0},
+ #{'nBlades':1, 'TSR':5.0},
+ #{'nBlades':2, 'TSR':2.5},
+ #{'nBlades':2, 'TSR':5.0},
+ #{'nBlades':2, 'TSR':7.5}
 ]
+
 
 for input in inputs:
     # User inputs
@@ -297,17 +272,29 @@ for input in inputs:
     #windVelocity = input['uInfs'] #18.3 * 1e-2
     if (TSR == 2.5):
         windVelocity = 18.3e-2
+        # Post-processing directory
+        # Create target directory & all intermediate directories if don't exists
+        outDir = 'outputs_TSR2.5'
     elif (TSR == 5.0):
         windVelocity = 9.1 * 1e-2
+        outDir = 'outputs_TSR5.0'        
     elif(TSR == 7.5):
         windVelocity = 6.1 * 1e-2
+        outDir = 'outputs_TSR7.5'        
     else:
         print('TSR not recognized!')
         exit(1)
 
+    if not os.path.exists(outDir):
+        os.makedirs(outDir)
+    else:
+        print("Directory ", outDir, " already exists")
+    
     # Pre-processing
     rotationRPM = TSR * windVelocity / rotorRadius * 30. / np.pi
-    itersPerTour = 36.
+    #itersPerTour = 144.
+    azimuthStep = 5.0
+    itersPerTour = 360./azimuthStep
     rotationSpeed = rotationRPM * np.pi / 30.
     timeOneRotation = 60. / rotationRPM
     timeStep = timeOneRotation / itersPerTour
@@ -315,9 +302,9 @@ for input in inputs:
     innerIter = 10
     timeSteps = np.arange(0., timeEnd, timeStep)
 
-    Blades, deltaFlts = VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity)
+    Blades, deltaFlts = VAWT_rotor(bladePitch, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity, len(timeSteps))
 
-    deltaPtcles = 1e-4
+    deltaPtcles = 1e-2
 
     wake = Wake()
 
@@ -331,14 +318,14 @@ for input in inputs:
     startTime = time.time()
     for (it, t) in enumerate(timeSteps):
 
-        azimuth = it * rotationSpeed * timeStep
+        #azimuth = it * rotationSpeed * timeStep
 
-        myAzimuth = np.degrees(azimuth) % 360.
-        print("###############################", myAzimuth)
-        azims.append(myAzimuth)
+        #myAzimuth = np.degrees(azimuth) % 360.
+        #print("###############################", myAzimuth)
+        #azims.append(myAzimuth)
 
-        print('azimuth: ', np.degrees(azimuth))
-        updateWing(Blades, it, time, azimuth, rotationSpeed)
+        print('azimuth: ', azimuth)
+        updateWing(Blades, it, time, np.radians(azimuth), rotationSpeed)
 
         print('iteration, time, finaltime: ', it, t, timeSteps[-1])
         partsPerFil = 1
@@ -362,23 +349,37 @@ for input in inputs:
                 cn = midSpanLift * np.cos(midSpanAOA) + midSpanDrag*np.sin(midSpanAOA)
                 ct = midSpanLift * np.sin(midSpanAOA) - midSpanDrag*np.cos(midSpanAOA)
                 midBladeCn.append(cn * (midSpanUEff / windVelocity)**2.)
+                
+                CnDistrib = Blades[0].lift*np.cos(Blades[0].attackAngle) + Blades[0].drag*np.sin(Blades[0].attackAngle)
+                FnStar = CnDistrib * (Blades[0].effectiveVelocity/windVelocity)**2.
 
+                plt.cla()
+                plt.close()                
+                plt.plot(FnStar, Blades[0].centers[:,2])
+                plt.xlim([-50,50])
+                
+                data = np.zeros([len(Blades[0].centers[:,2]), 3])
+                data[:,0] = Blades[0].centers[:,2]
+                data[:,1] = FnStar
+                data[:,2] = CnDistrib
+                np.savetxt('TSR_'+str(TSR)+'_'+str(int(azimuth))+'.dat', data)
+        azimuth += azimuthStep
     print('Total simulation time: ', time.time() - startTime)
 
-    import matplotlib.pyplot as plt
+    #import matplotlib.pyplot as plt
 
-    plt.cla()
-    plt.close()
-    plt.plot(np.linspace(0., 360., int(itersPerTour))-10., midBladeCn, 'o-', label='PITCHOU-10deg')
-    plt.plot(np.linspace(0., 360., int(itersPerTour)), midBladeCn, 'o-', label='PITCHOU')
-    #ref = np.genfromtxt('V2D_Results.dat')
-    #plt.plot(ref[:,0], ref[:,1], label='VertiGO V2D')
-    #ref = np.genfromtxt('AC_Results.dat')
-    #plt.plot(ref[:,0], ref[:,1], label='VertiGO AC')
-    ref = np.genfromtxt('Measurements/Fn_Nb'+str(input['nBlades'])+'_TSR'+str(input['TSR'])+'.dat')
-    ref[:,0] = ref[:,0] % 360.
-    plt.plot(ref[:,0], -ref[:,1], 'o', label='Expe')
-    plt.legend()
-    plt.tight_layout()
-    plt.grid()
-    plt.savefig('cnEvolution_Nb'+str(input['nBlades'])+'_TSR'+str(input['TSR'])+'.png', format='png', dpi=200)
+    #plt.cla()
+    #plt.close()
+    #plt.plot(np.linspace(0., 360., int(itersPerTour))-10., midBladeCn, 'o-', label='PITCHOU-10deg')
+    #plt.plot(np.linspace(0., 360., int(itersPerTour)), midBladeCn, 'o-', label='PITCHOU')
+    ##ref = np.genfromtxt('V2D_Results.dat')
+    ##plt.plot(ref[:,0], ref[:,1], label='VertiGO V2D')
+    ##ref = np.genfromtxt('AC_Results.dat')
+    ##plt.plot(ref[:,0], ref[:,1], label='VertiGO AC')
+    #ref = np.genfromtxt('Measurements/Fn_Nb'+str(input['nBlades'])+'_TSR'+str(input['TSR'])+'.dat')
+    #ref[:,0] = ref[:,0] % 360.
+    #plt.plot(ref[:,0], -ref[:,1], 'o', label='Expe')
+    #plt.legend()
+    #plt.tight_layout()
+    #plt.grid()
+    #plt.savefig('cnEvolution_Nb'+str(input['nBlades'])+'_TSR'+str(input['TSR'])+'.png', format='png', dpi=200)
