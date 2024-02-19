@@ -1,0 +1,6 @@
+# ignore setup files
+build
+PITCHOU.egg-info
+
+
+examples/*/outputs/
