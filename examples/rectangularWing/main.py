@@ -168,9 +168,9 @@ for aspectRatio in aspectRatios:
             write_filaments_tp(Blades, outDir)
 
             if(wingType == "Elliptical"):
-                output = open('liftDistribution_elliptical.dat', 'w')
+                output = open('outputs/liftDistribution_elliptical.dat', 'w')
             else:
-                output = open('liftDistribution_rectangular_AR'+str(aspectRatio)+'.dat', 'w')
+                output = open('outputs/liftDistribution_rectangular_AR'+str(aspectRatio)+'.dat', 'w')
             centers = Blades[0].centers
             liftDistribution = Blades[0].lift / (2.*np.pi*np.radians(bladePitch))
             for i in range(len(centers)):

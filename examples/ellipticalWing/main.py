@@ -149,7 +149,7 @@ for (it, t) in enumerate(timeSteps):
         write_blade_tp(Blades, outDir)
         write_filaments_tp(Blades, outDir)
 
-        output = open('liftDistribution_rectangular.dat', 'w')
+        output = open('outputs/liftDistribution_rectangular.dat', 'w')
         centers = Blades[0].centers
         liftDistribution = Blades[0].lift
         for i in range(len(centers)):
