@@ -274,13 +274,13 @@ for input in inputs:
         windVelocity = 18.3e-2
         # Post-processing directory
         # Create target directory & all intermediate directories if don't exists
-        outDir = 'outputs_TSR2.5'
+        outDir = 'outputs/outputs_TSR2.5'
     elif (TSR == 5.0):
         windVelocity = 9.1 * 1e-2
-        outDir = 'outputs_TSR5.0'        
+        outDir = 'outputs/outputs_TSR5.0'        
     elif(TSR == 7.5):
         windVelocity = 6.1 * 1e-2
-        outDir = 'outputs_TSR7.5'        
+        outDir = 'outputs/outputs_TSR7.5'        
     else:
         print('TSR not recognized!')
         exit(1)
@@ -362,7 +362,7 @@ for input in inputs:
                 data[:,0] = Blades[0].centers[:,2]
                 data[:,1] = FnStar
                 data[:,2] = CnDistrib
-                np.savetxt('TSR_'+str(TSR)+'_'+str(int(azimuth))+'.dat', data)
+                np.savetxt('outputs/TSR_'+str(TSR)+'_'+str(int(azimuth))+'.dat', data)
         azimuth += azimuthStep
     print('Total simulation time: ', time.time() - startTime)
 
