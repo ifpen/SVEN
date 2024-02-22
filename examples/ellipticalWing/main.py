@@ -112,7 +112,7 @@ def write_blade_tp(blades, outDir):
         output.close()
     return
 
-Blades, uInfty, deltaFlts = Wing(5., "Rectangular")
+Blades, uInfty, deltaFlts = Wing(5., "Elliptical")
 
 nodes = Blades[0].bladeNodes
 nNodes = len(nodes)
@@ -149,7 +149,7 @@ for (it, t) in enumerate(timeSteps):
         write_blade_tp(Blades, outDir)
         write_filaments_tp(Blades, outDir)
 
-        output = open('outputs/liftDistribution_rectangular.dat', 'w')
+        output = open('outputs/liftDistribution_elliptical.dat', 'w')
         centers = Blades[0].centers
         liftDistribution = Blades[0].lift
         for i in range(len(centers)):
