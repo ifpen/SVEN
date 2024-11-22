@@ -1,4 +1,12 @@
 import os
+import sys
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(script_dir)
+parent_of_project_dir = os.path.dirname(project_dir)
+
+# Add the project directory to the system path
+sys.path.append(parent_of_project_dir)
 
 from pitchou.windTurbine import *
 from pitchou.airfoil import *
@@ -15,14 +23,24 @@ else:
     print("Directory ", outDir, " already exists")
 
 
-def NewMexicoWindTurbine():
+def NewMexicoWindTurbine(caseID):
     sign = -1.
     hubRadius = 0.210
     nBlades = 3
     rotationalVelocity = 44.5163679
-    windVelocity = 15.06 #10.05 #15.06
+
+    if(caseID == "10"):
+        windVelocity = 10.05
+        density = 1.197
+    if(caseID == "15"):
+        windVelocity = 15.06
+        density = 1.191
+    if(caseID == "24"):
+        windVelocity = 24.05
+        density = 1.195
+
     bladePitch = sign * 0.040143
-    nearWakeLength = 359
+    nearWakeLength = 540
 
     dataAirfoils = np.genfromtxt('../../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
                                  dtype='U')
@@ -51,7 +69,7 @@ def NewMexicoWindTurbine():
     myWT = windTurbine(nBlades, hubCenter, hubRadius, rotationalVelocity, windVelocity, bladePitch)
     blades = myWT.initializeTurbine(nodesRadius, nodesChord, nearWakeLength, centersAirfoils, nodesTwistAngles, myWT.nBlades)
 
-    return blades, myWT, windVelocity, 0.01, 1e-4
+    return blades, myWT, windVelocity, density, 0.1, 1e-4
 
 
 def EllipticalWing(bladePitch):
@@ -148,83 +166,64 @@ def write_blade_tp(blades, outDir):
     return
 
 
-windTurbineCase = True
-# Blades, WindTurbine, uInfty, deltaFlts = NewMexicoWindTurbine()  # EllipticalWing() #StraightWingCastor() #StraightBlade() #EllipticalWing()
-
-if(windTurbineCase == True):
-    Blades, WindTurbine, uInfty, deltaFlts, deltaPtcles = NewMexicoWindTurbine()
+cases = ["10", "15", "24"]
+for caseID in cases:
+    Blades, WindTurbine, uInfty, density, deltaFlts, deltaPtcles = NewMexicoWindTurbine(caseID)
     DegreesPerTimeStep = 10.
-    timeStep = np.radians(
-        DegreesPerTimeStep) / WindTurbine.rotationalVelocity
+    timeStep = np.radians(DegreesPerTimeStep) / WindTurbine.rotationalVelocity
     innerIter  = 12
-    nRotations = 10.
+    nRotations = 15.
     timeEnd = np.radians(nRotations * 360.) / WindTurbine.rotationalVelocity
     eps_conv = 1e-4
-
     refAzimuth = -WindTurbine.rotationalVelocity * timeStep
-
     timeSteps = np.arange(0., timeEnd, timeStep)
-else:
-    timeStep = 0.1
-    timeEnd  = 10.
-    innerIter = 10
-    timeSteps = np.arange(0., timeEnd, timeStep)
-    Blades, uInfty, deltaFlts = EllipticalWing(5.)
-    deltaPtcles = 1e-4
 
-wake = Wake()
+    wake = Wake()
 
-eps_conv = 1e-4
+    eps_conv = 1e-4
 
-timeSimulation = 0.
+    timeSimulation = 0.
+    iterationVect = []
+    startTime = time.time()
+    useGPU = True
 
-startTime = time.time()
-for (it, t) in enumerate(timeSteps):
+    for (it, t) in enumerate(timeSteps):
 
-    if(windTurbineCase == True):
         refAzimuth += WindTurbine.rotationalVelocity * timeStep
         WindTurbine.updateTurbine(refAzimuth)
 
-    print('iteration, time, finaltime: ', it, t, timeSteps[-1])
-    partsPerFil = 1
-    timeSimulation += timeStep
-    update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
+        print('iteration, time, finaltime: ', it, t, timeSteps[-1])
+        partsPerFil = 1
+        timeSimulation += timeStep
+        update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil, startTime, iterationVect, useGPU)
 
-    postProcess = False
-    if(postProcess):
-        write_particles(outDir)
-        write_blade_tp(Blades, outDir)
-        write_filaments_tp(Blades, outDir)
+        wakePostProcess = True
+        forcesPostProcess = True
 
-        if (windTurbineCase == True):
+        if(wakePostProcess):
+            write_particles(outDir)
+            write_blade_tp(Blades, outDir)
+            write_filaments_tp(Blades, outDir)
+
+        if(forcesPostProcess):
             centers = Blades[0].centers
 
-            Fn, Ft = WindTurbine.evaluateForces(1.191) #(1.197)
-            output = open('outputs/bladeForces_'+str(it)+'.dat', 'w')
+            Fn, Ft = WindTurbine.evaluateForces(density)
+            output = open('outputs/bladeForces_case_'+caseID+'_'+str(it)+'.dat', 'w')
             for i in range(len(centers)):
                 output.write(str(np.linalg.norm(centers[i])) + ' ' + str(Fn[i]) + ' ' + str(Ft[i]) + '\n')
             output.close()
 
-            output = open('outputs/liftDistribution.dat', 'w')
+            output = open('outputs/liftDistribution_case_'+caseID+'.dat', 'w')
             liftDistribution = Blades[0].lift
             for i in range(len(centers)):
-                if (windTurbineCase == True):
-                    TwistAndPitch = WindTurbine.bladePitch + .5 * (
-                            WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
-                    aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
-                else:
-                    output = open('outputs/liftDistribution.dat', 'w')
-                    aoa_th = 0.
+                TwistAndPitch = WindTurbine.bladePitch + .5 * (
+                        WindTurbine.nodesTwistAngles[i] + WindTurbine.nodesTwistAngles[i + 1])
+                aoa_th = np.degrees(np.arctan2(uInfty, WindTurbine.rotationalVelocity * centers[i][1]) - TwistAndPitch)
                 output.write(str(np.linalg.norm(centers[i])) + ' ' + str(liftDistribution[i]) + ' ' + str(
                     np.degrees(Blades[0].attackAngle[i])) + ' ' + str(Blades[0].effectiveVelocity[i]) + '\n')
             output.close()
-        else :
-            output = open('liftDistribution_elliptical.dat', 'w')
-            centers = Blades[0].centers
-            liftDistribution = Blades[0].lift
-            for i in range(len(centers)):
-                output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
-            output.close()
-print('Total simulation time: ', time.time() - startTime)
+
+    print('Total simulation time: ', time.time() - startTime)
 
 

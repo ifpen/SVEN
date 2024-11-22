@@ -5,9 +5,10 @@ from pitchou.wake import *
 
 
 def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv,
-           particlesPerFil):
+           particlesPerFil, startTime, iterationVect, useGPU):
     iteration = timeSimulation / timeStep
     iterationTime = time.time()
+    
 
     #############################################################################################
     # Initialize all inductions
@@ -62,7 +63,7 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
     t0 = time.time()
     if (nearWakeLength > 2):
         bladeOrWake = "blade"
-        wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake)
+        wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake, useGPU)
 
     #############################################################################################
     # If the wake is composed of particles : compute the particles' induction on blade centers
@@ -138,7 +139,7 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
 
     # if(timeSimulation > 30.*timeStep):
     if (nearWakeLength > 2):
-        wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, "wake")
+        wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, "wake", useGPU)
         particlesInductionOnFilaments(blades, wake, deltaPtcles, wake.ptclesPosX, wake.ptclesPosY, wake.ptclesPosZ,
                                       wake.ptclesVorX, wake.ptclesVorY, wake.ptclesVorZ, wake.ptclesRad)
         filamentsInductionOnParticles(blades, wake, deltaFlts)
@@ -146,7 +147,7 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
     print('wakeOnWake: ', t1 - t0)
 
     t0 = time.time()
-    bladeInductionsOnWake(blades, wake, deltaFlts)
+    bladeInductionsOnWake(blades, wake, deltaFlts, useGPU)
     t1 = time.time()
     print('bladeOnWake: ', t1 - t0)
 
@@ -177,6 +178,8 @@ def update(blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts,
             blade.updateFilamentCirulations()
 
     print('Full iteration time: ', time.time() - iterationTime)
+    iterationVect.append([time.time() - iterationTime, time.time()-startTime])
+
     return
 
 
@@ -297,7 +300,7 @@ def nearWakeInduction(blades, deltaFlts):
     return allBladeInductions
 
 
-def bladeInductionsOnWake(blades, wake, deltaFlts):
+def bladeInductionsOnWake(blades, wake, deltaFlts, useGPU):
     # useBoundFilaments = False
     useBoundFilaments = True
 
@@ -357,16 +360,37 @@ def bladeInductionsOnWake(blades, wake, deltaFlts):
     numFilaments = np.int32(len(fltsCirculations))
     deltaFlts = np.float32(deltaFlts)
 
-    threadsPerBlock = 256
-    blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
+    # threadsPerBlock = 1
+    # # threadsPerBlock =1
+    # blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
+    # #blocksPerGrid = 1
 
-    bladeOnParticlesKernel(
-        drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
-        drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
-        drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
-        drv.In(fltsRightNodesZ), drv.In(fltsCirculations), drv.In(fltsLengthsFix),
-        numParticles, numFilaments, deltaFlts,
-        block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
+    # bladeOnParticlesKernel(
+    #     drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
+    #     drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
+    #     drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
+    #     drv.In(fltsRightNodesZ), drv.In(fltsCirculations), drv.In(fltsLengthsFix),
+    #     numParticles, numFilaments, deltaFlts,
+    #     block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
+
+
+    if(useGPU):
+        # threadsPerBlock = 1            
+        threadsPerBlock = 256
+        blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
+        bladeOnParticlesKernel(
+            drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
+            drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
+            drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
+            drv.In(fltsRightNodesZ), drv.In(fltsCirculations), drv.In(fltsLengthsFix), numParticles, numFilaments, deltaFlts,
+            block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
+    else:
+        cpu_bladeOnParticlesKernel(
+            destUx, destUy, destUz, nodesPosX, nodesPosY,
+            nodesPosZ, fltsLeftNodesX, fltsLeftNodesY,
+            fltsLeftNodesZ, fltsRightNodesX, fltsRightNodesY,
+            fltsRightNodesZ, fltsCirculations, fltsLengthsFix, numParticles, numFilaments, deltaFlts)
+
 
     # WARNING: works only for 1 blade!
     filamentsInductionsUx = destUx[:fltsNodesSize]
@@ -393,7 +417,7 @@ def bladeInductionsOnWake(blades, wake, deltaFlts):
     return
 
 
-def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
+def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake, useGPU):
     # GPU versiond
     bladeOnParticlesKernel_v2 = modFlts.get_function("bladeOnParticlesKernel")
 
@@ -488,15 +512,26 @@ def wakeFilamentsInductionsOnBladeOrWake(blades, wake, deltaFlts, bladeOrWake):
         numFilaments = np.int32(len(fltsCirculations))
         deltaFlts = np.float32(deltaFlts)
 
-        threadsPerBlock = 256
-        blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
+        if(useGPU):
 
-        bladeOnParticlesKernel_v2(
-            drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
-            drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
-            drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
-            drv.In(fltsRightNodesZ), drv.In(fltsCirculations), drv.In(fltsLengthsFix), numParticles, numFilaments, deltaFlts,
-            block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
+            # threadsPerBlock = 1            
+            threadsPerBlock = 256
+            blocksPerGrid = int((len(nodesPosX) + threadsPerBlock - 1) / threadsPerBlock)
+            print('HELLLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO FREDDDDDDDDD')        
+
+            bladeOnParticlesKernel_v2(
+                drv.Out(destUx), drv.Out(destUy), drv.Out(destUz), drv.In(nodesPosX), drv.In(nodesPosY),
+                drv.In(nodesPosZ), drv.In(fltsLeftNodesX), drv.In(fltsLeftNodesY),
+                drv.In(fltsLeftNodesZ), drv.In(fltsRightNodesX), drv.In(fltsRightNodesY),
+                drv.In(fltsRightNodesZ), drv.In(fltsCirculations), drv.In(fltsLengthsFix), numParticles, numFilaments, deltaFlts,
+                block=(threadsPerBlock, 1, 1), grid=(blocksPerGrid, 1))
+        else:
+            cpu_bladeOnParticlesKernel(
+                destUx, destUy, destUz, nodesPosX, nodesPosY,
+                nodesPosZ, fltsLeftNodesX, fltsLeftNodesY,
+                fltsLeftNodesZ, fltsRightNodesX, fltsRightNodesY,
+                fltsRightNodesZ, fltsCirculations, fltsLengthsFix, numParticles, numFilaments, deltaFlts)
+
 
         if (bladeOrWake == "blade"):
             for blade in blades:
@@ -578,7 +613,7 @@ def particlesInductionOnFilaments(blades, wake,
 
         numBladePoint = np.int32(len(nodesPosX))
         numParticles = np.int32(len(ptclesPosX))
-        threadsPerBlock = 256
+        threadsPerBlock = 1
         blocksPerGrid = int((len(ptclesPosX) + threadsPerBlock - 1) / threadsPerBlock)
         deltaParticles = np.float32(deltaPtcles)
 

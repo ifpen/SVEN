@@ -1,4 +1,14 @@
 import os
+import sys
+# Get the directory containing the examples folder
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(script_dir)
+parent_of_project_dir = os.path.dirname(project_dir)
+
+# Add the project directory to the system path
+sys.path.append(parent_of_project_dir)
+
+
 
 from pitchou.windTurbine import *
 from pitchou.airfoil import *
@@ -20,11 +30,11 @@ def Wing(bladePitch, wingType):
         print("Non-existing wing type: ", wingType, " please use \"Elliptical\" or \"Rectangular\"")
     
     # Blade discretisation
-    nBladeCenters = 50
-    nearWakeLength = 1000
+    nBladeCenters = 105
+    nearWakeLength = 540
 
-    AR = 8.
-    bladeLength = 2.
+    AR = 6.
+    bladeLength = 10.
     if(wingType == "Elliptical"):
         cRoot = 4 * bladeLength / (AR * np.pi)    
     elif(wingType == "Rectangular"):
@@ -66,7 +76,8 @@ def Wing(bladePitch, wingType):
     Blades = []
     Blades.append(liftingLine1)
 
-    deltaFlts = np.sqrt(1e-6)
+    # deltaFlts = np.sqrt(1)
+    deltaFlts = np.sqrt(1e-3)
 
     return Blades, uInfty, deltaFlts
 
@@ -122,8 +133,9 @@ for i in range(len(nodes)-1):
 meanDistance = np.mean(distances)
 
 relax = 0.5
-timeStep = meanDistance / uInfty * relax #0.025
-timeEnd  = 10.
+timeStep = 0.1
+# timeStep = meanDistance / uInfty * relax #0.025
+timeEnd  = 540.*timeStep
 innerIter = 10
 timeSteps = np.arange(0., timeEnd, timeStep)
 
@@ -133,28 +145,31 @@ partsPerFil = 1
 wake = Wake()
 
 eps_conv = 1e-4
-
+print('coucou')
 timeSimulation = 0.
-
+iterationVect = []
 startTime = time.time()
+useGPU = False
 for (it, t) in enumerate(timeSteps):
 
     print('iteration, time, finaltime: ', it, t, timeSteps[-1])
     timeSimulation += timeStep
-    update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
-
-    postProcess = True
+    update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil, startTime, iterationVect, useGPU)
+    
+    postProcess = False
     if(postProcess):
         write_particles(outDir)
         write_blade_tp(Blades, outDir)
         write_filaments_tp(Blades, outDir)
 
-        output = open('outputs/liftDistribution_elliptical.dat', 'w')
+    if(it % 25 == 0):
+        output = open('/work/leguerca/Pitchou/vortex_caroline/examples/ellipticalWing/outputs/elliptical_case_results/liftDistribution_elliptical_dt_0_001_case_ONE_BLOCK.dat', 'w')
         centers = Blades[0].centers
         liftDistribution = Blades[0].lift
         for i in range(len(centers)):
             output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
-        output.close()
+        output.close()        
+
+    np.savetxt("simulationTimes.dat", iterationVect)
+
 print('Total simulation time: ', time.time() - startTime)
-
-

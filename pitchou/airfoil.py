@@ -28,6 +28,7 @@ class Airfoil:
 
     def getLift(self, aoa):
         return interp_checked(self.AOAs, self.Lifts, aoa)
+        # return 2*np.pi*aoa
 
     def getDrag(self, aoa):
         return interp_checked(self.AOAs, self.Drags, aoa)

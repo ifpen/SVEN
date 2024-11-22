@@ -6,6 +6,45 @@ import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 
 @jit(nopython=True, fastmath=True)
+def cpu_bladeOnParticlesKernel(destUx, destUy, destUz, ptclePosX, ptclePosY, 
+                           ptclePosZ, fltsLeftX, fltsLeftY, fltsLeftZ,
+                           fltsRightX, fltsRightY, fltsRightZ, fltsCirculations, 
+                           lengthRegul, numParticles, numFilaments, deltaFlts):
+
+  # Loop over all source particles
+  for idx in range(numParticles):
+    
+    curr_px = ptclePosX[idx];
+    curr_py = ptclePosY[idx];
+    curr_pz = ptclePosZ[idx];
+    
+    # Loop over all source filaments
+    for k in range(numFilaments):
+        
+        pxx1  = curr_px  - fltsLeftX[k];
+        pyy1  = curr_py  - fltsLeftY[k];
+        pzz1  = curr_pz  - fltsLeftZ[k];
+        
+        pxx2  = curr_px - fltsRightX[k];
+        pyy2  = curr_py - fltsRightY[k];
+        pzz2  = curr_pz - fltsRightZ[k];
+             
+        r1  = np.sqrt((pxx1*pxx1 + pyy1*pyy1 + pzz1*pzz1));
+        r2  = np.sqrt((pxx2*pxx2 + pyy2*pyy2 + pzz2*pzz2));
+        
+        den  = r1*r2*(r1*r2 + pxx1*pxx2 + pyy1*pyy2 + pzz1*pzz2) + lengthRegul[k];
+        
+        ubar = 0.;
+        if(abs(den) > 1e-32):
+          ubar  = fltsCirculations[k] *(r1 + r2) / den;
+        
+        destUx[idx] += ubar * (pyy1*pzz2-pzz1*pyy2);
+        destUy[idx] += ubar * (pzz1*pxx2-pxx1*pzz2);
+        destUz[idx] += ubar * (pxx1*pyy2-pyy1*pxx2);
+
+  return
+
+@jit(nopython=True, fastmath=True)
 def biotSavartFilaments_v4(evaluationPoints, leftNodes, rightNodes, circulations, deltaFlts):
     #
     inducedVelocities = np.zeros((len(evaluationPoints),3))
