@@ -1,8 +1,29 @@
-from pitchou.wake import *
 from scipy.spatial.transform import Rotation as R
+import numpy as np
 
 
 class Blade:
+    """Class to define a blade.
+
+    Parameters
+    ----------
+    nodes : 
+        Path to .foil file with the polars definition.
+    nodeChords : int, optional
+        Length of the file header to skip (default is 0).
+    nearWakeLength : 
+        blahblahblah
+    airfoils : 
+        blahblahblah
+    centersOrientationMatrix :
+        blahblahblah
+    nodesOrientationMatrix :
+        blahblahblah 
+    centersTranslationVelocity : 
+        blahblahblah
+    nodesTranslationVelocity :
+        blahblahblah
+    """
     def __init__(self, nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
                  centersTranslationVelocity, nodesTranslationVelocity):
 
@@ -44,16 +65,14 @@ class Blade:
 
         self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
 
-        # self.updateFirstWakeRow()
 
         return
 
     def initializeWake(self):
-        # Near-wake filaments
-        # self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3])
+      
         for i in range(self.nearWakeLength):
             for j in range(len(self.bladeNodes)):
-                self.wakeNodes[j,i,:] = self.trailingEdgeNode[j,:] #+ np.asarray([float(i+1) * 0.1,0.,0.]) #self.trailingEdgeNode[j] +
+                self.wakeNodes[j,i,:] = self.trailingEdgeNode[j,:] 
         return
 
     def updateFilamentCirulations(self):
@@ -108,19 +127,7 @@ class Blade:
         self.wakeNodes[:,0,:] = self.trailingEdgeNode
         return
 
-    def updateCentersPos(self):
 
-        for i in range(len(self.centers)):
-            dist_to_3_4 = [self.centerChords[i] * 1. / 2., 0, 0]
-            r = R.from_matrix(self.centersOrientationMatrix[i])
-            dist_to_3_4 = r.apply(dist_to_3_4, inverse=False)
-            self.centers[i] = self.centers[i] + dist_to_3_4
-        return
-
-    def getLiftDrag(self):
-        return R.from_matrix(self.centersOrientationMatrix)
-
-    # @njit(fastmath=True)
     def estimateGammaBound(self, uInfty, nearWakeInducedVelocities):
 
         relax = 0.05
@@ -138,7 +145,7 @@ class Blade:
         uEffectiveInElementRef[:, 1] = 0.
         self.attackAngle = np.arctan2(uEffectiveInElementRef[:, 2], uEffectiveInElementRef[:, 0])
 
-        # I could not get rid of this for loop yet...
+
         for i in range(len(self.centers)):
             self.lift[i] = self.airfoils[i].getLift(self.attackAngle[i])
             self.drag[i] = self.airfoils[i].getDrag(self.attackAngle[i])

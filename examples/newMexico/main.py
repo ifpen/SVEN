@@ -8,10 +8,12 @@ parent_of_project_dir = os.path.dirname(project_dir)
 # Add the project directory to the system path
 sys.path.append(parent_of_project_dir)
 
-from pitchou.windTurbine import *
-from pitchou.airfoil import *
-from pitchou.blade import *
-from pitchou.solver import *
+from sven.windTurbine import *
+from sven.airfoil import *
+from sven.blade import *
+from sven.solver import *
+from utils.io import *
+
 from scipy import interpolate
 
 # Post-processing directory
@@ -23,34 +25,21 @@ else:
     print("Directory ", outDir, " already exists")
 
 
-def NewMexicoWindTurbine(caseID):
+def NewMexicoWindTurbine(windVelocity,density,nearWakeLength):
     sign = -1.
     hubRadius = 0.210
     nBlades = 3
     rotationalVelocity = 44.5163679
-
-    if(caseID == "10"):
-        windVelocity = 10.05
-        density = 1.197
-    if(caseID == "15"):
-        windVelocity = 15.06
-        density = 1.191
-    if(caseID == "24"):
-        windVelocity = 24.05
-        density = 1.195
-
     bladePitch = sign * 0.040143
-    nearWakeLength = 540
-
+    
     dataAirfoils = np.genfromtxt('../../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1, usecols=(7),
                                  dtype='U')
     intAirfoils = np.arange(0, len(dataAirfoils))
 
     data = np.genfromtxt('../../turbineModels/NewMexico/reference_files/mexico.blade', skip_header=1)
 
-    refRadius = data[:,2] #np.linspace(0., 2.04, 45) # data[:,2]
+    refRadius = data[:,2] 
 
-    # Radius start at blade root, not hub center!
     inputNodesTwistAngles = -sign * np.radians(data[:, 5])
     inputNodesChord = data[:, 6]
 
@@ -71,121 +60,36 @@ def NewMexicoWindTurbine(caseID):
 
     return blades, myWT, windVelocity, density, 0.1, 1e-4
 
-
-def EllipticalWing(bladePitch):
-    # Blade discretisation
-    nBladeCenters = 10
-    nearWakeLength = 10
-
-    AR = 6.
-    bladeLength = 10.
-    cRoot = 4 * bladeLength / (AR * np.pi)
-    uInfty = 1.
-
-    # Multiple straight wings
-    nodes = np.zeros([nBladeCenters + 1, 3])
-    nodes[:, 1] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
-
-    nodeChords = np.zeros(len(nodes))
-    for i in range(len(nodes)):
-        nodeChords[i] = np.sqrt(np.abs(cRoot ** 2. * (1. - 4. * (nodes[i, 1] / bladeLength) ** 2.)))
-
-    airfoils = []
-    for i in range(len(nodes) - 1):
-        airfoils.append(Airfoil('../data/flatPlate.foil'))
-
-    centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
-    for i in range(len(nodes) - 1):
-        r = R.from_euler('y', bladePitch, degrees=True)
-        centersOrientationMatrix[i] = r.as_matrix()
-
-    nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
-    for i in range(len(nodes)):
-        r = R.from_euler('y', bladePitch, degrees=True)
-        nodesOrientationMatrix[i] = r.as_matrix()
-
-    liftingLine1 = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
-                         np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
-    liftingLine2 = Blade(nodes+[0., 0., 10.], nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
-                         np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
-
-    liftingLine1.updateFirstWakeRow()
-    liftingLine1.initializeWake()
-
-    liftingLine2.updateFirstWakeRow()
-    liftingLine2.initializeWake()
-
-    Blades = []
-    Blades.append(liftingLine1)
-    Blades.append(liftingLine2)
-
-    deltaFlts = np.sqrt(1e-2)
-
-    return Blades, uInfty, deltaFlts
-
-
-def write_particles(outDir):
-    output = open(outDir + '/New_Particles_tStep_' + str(it) + '.particles', 'w')
-    for i in range(len(wake.particlesPositionX)):
-        output.write(str(wake.particlesPositionX[i]) + " " + str(wake.particlesPositionY[i]) + " " + str(
-            wake.particlesPositionZ[i]) + " " + "\n")
-    output.close()
-
-    return
-
-def write_filaments_tp(blades, outDir):
-
-    for (iBlade, blade) in enumerate(blades):
-        shape = np.shape(blade.wakeNodes)
-
-        output = open(outDir + '/Filaments_Nodes_' + '_Blade_'+str(iBlade)+'_tStep_'+str(it)+'.tp', 'w')
-        output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
-        output.write('ZONE T="Near-wake" I='+str(shape[0])+' J='+str(shape[1]-1)+', K=1, DT=(SINGLE SINGLE SINGLE SINGLE)\n')
-        for j in range(np.shape(blade.wakeNodes)[1]-1):
-            for i in range(np.shape(blade.wakeNodes)[0]):
-                output.write(str(blade.wakeNodes[i,j,0]) + " " + str(blade.wakeNodes[i,j,1]) + " " + str(blade.wakeNodes[i,j,2]) + " " +str(blade.trailFilamentsCirculation[i,j]) + "\n")
-        output.close()
-
-    return
-
-def write_blade_tp(blades, outDir):
-
-    for (iBlade, blade) in enumerate(blades):
-        shape = len(blade.bladeNodes)
-
-        output = open(outDir + '/Blade_'+str(iBlade)+'_Nodes_tStep_'+str(it)+'.tp', 'w')
-        output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z"\n')
-        output.write('ZONE T="Near-wake" I='+str(shape)+' J='+str(2)+', K=1, DT=(SINGLE SINGLE SINGLE)\n')
-        for i in range(shape):
-                output.write(str(blade.bladeNodes[i,0]) + " " + str(blade.bladeNodes[i,1]) + " " + str(blade.bladeNodes[i,2]) + "\n")
-        for i in range(shape):
-                output.write(str(blade.trailingEdgeNode[i,0]) + " " + str(blade.trailingEdgeNode[i,1]) + " " + str(blade.trailingEdgeNode[i,2]) + "\n")
-        output.close()
-    return
-
-
 cases = ["10", "15", "24"]
+nearWakeLength = 540
+innerIter  = 12
+nRotations = 15.
+DegreesPerTimeStep = 10.
+
+
 for caseID in cases:
-    Blades, WindTurbine, uInfty, density, deltaFlts, deltaPtcles = NewMexicoWindTurbine(caseID)
-    DegreesPerTimeStep = 10.
+    if(caseID == "10"):
+        windVelocity = 10.05
+        density = 1.197
+    if(caseID == "15"):
+        windVelocity = 15.06
+        density = 1.191
+    if(caseID == "24"):
+        windVelocity = 24.05
+        density = 1.195
+    Blades, WindTurbine, uInfty, density, deltaFlts, deltaPtcles = NewMexicoWindTurbine(windVelocity,density,nearWakeLength)
     timeStep = np.radians(DegreesPerTimeStep) / WindTurbine.rotationalVelocity
-    innerIter  = 12
-    nRotations = 15.
+    
     timeEnd = np.radians(nRotations * 360.) / WindTurbine.rotationalVelocity
     eps_conv = 1e-4
     refAzimuth = -WindTurbine.rotationalVelocity * timeStep
     timeSteps = np.arange(0., timeEnd, timeStep)
-
-    wake = Wake()
 
     eps_conv = 1e-4
 
     timeSimulation = 0.
     iterationVect = []
     startTime = time.time()
-    useGPU = True
 
     for (it, t) in enumerate(timeSteps):
 
@@ -195,15 +99,14 @@ for caseID in cases:
         print('iteration, time, finaltime: ', it, t, timeSteps[-1])
         partsPerFil = 1
         timeSimulation += timeStep
-        update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil, startTime, iterationVect, useGPU)
+        update(Blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, startTime, iterationVect)
 
         wakePostProcess = True
         forcesPostProcess = True
 
         if(wakePostProcess):
-            write_particles(outDir)
-            write_blade_tp(Blades, outDir)
-            write_filaments_tp(Blades, outDir)
+            write_blade_tp(Blades, outDir, it)
+            write_filaments_tp(Blades, outDir, it)
 
         if(forcesPostProcess):
             centers = Blades[0].centers

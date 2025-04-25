@@ -2,10 +2,12 @@ import os
 
 import matplotlib.pyplot as plt
 
-from pitchou.windTurbine import *
-from pitchou.airfoil import *
-from pitchou.blade import *
-from pitchou.solver import *
+from sven.windTurbine import *
+from sven.airfoil import *
+from sven.blade import *
+from sven.solver import *
+from utils.io import *
+
 from scipy import interpolate
 
 
@@ -198,53 +200,6 @@ def updateWing(Blades, iteration, time, azimuth, rotationSpeed):
 
     return
 
-
-def write_particles(outDir):
-    output = open(outDir + '/New_Particles_tStep_' + str(it) + '.particles', 'w')
-    for i in range(len(wake.particlesPositionX)):
-        # if (wake.particlesVorticityX[i] +wake.particlesVorticityY[i] +wake.particlesVorticityZ[i] > 1e-6):
-        output.write(str(wake.particlesPositionX[i]) + " " + str(wake.particlesPositionY[i]) + " " + str(
-            wake.particlesPositionZ[i]) + " " + "\n")
-    output.close()
-
-    return
-
-
-def write_filaments_tp(blades, outDir):
-    for (iBlade, blade) in enumerate(blades):
-        shape = np.shape(blade.wakeNodes)
-
-        output = open(outDir + '/Filaments_Nodes_' + '_Blade_' + str(iBlade) + '_tStep_' + str(it) + '.tp', 'w')
-        output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
-        output.write('ZONE T="Near-wake" I=' + str(shape[0]) + ' J=' + str(
-            shape[1] - 1) + ', K=1, DT=(SINGLE SINGLE SINGLE SINGLE)\n')
-        for j in range(np.shape(blade.wakeNodes)[1] - 1):
-            for i in range(np.shape(blade.wakeNodes)[0]):
-                output.write(str(blade.wakeNodes[i, j, 0]) + " " + str(blade.wakeNodes[i, j, 1]) + " " + str(
-                    blade.wakeNodes[i, j, 2]) + " " + str(blade.trailFilamentsCirculation[i, j]) + "\n")
-        output.close()
-
-    return
-
-
-def write_blade_tp(blades, outDir):
-    for (iBlade, blade) in enumerate(blades):
-        shape = len(blade.bladeNodes)
-
-        output = open(outDir + '/Blade_' + str(iBlade) + '_Nodes_tStep_' + str(it) + '.tp', 'w')
-        output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z"\n')
-        output.write('ZONE T="Near-wake" I=' + str(shape) + ' J=' + str(2) + ', K=1, DT=(SINGLE SINGLE SINGLE)\n')
-        for i in range(shape):
-            output.write(str(blade.bladeNodes[i, 0]) + " " + str(blade.bladeNodes[i, 1]) + " " + str(
-                blade.bladeNodes[i, 2]) + "\n")
-        for i in range(shape):
-            output.write(str(blade.trailingEdgeNode[i, 0]) + " " + str(blade.trailingEdgeNode[i, 1]) + " " + str(
-                blade.trailingEdgeNode[i, 2]) + "\n")
-        output.close()
-    return
-
 inputs = [
  {'nBlades':1, 'TSR':2.5},
  {'nBlades':1, 'TSR':5.0},
@@ -306,8 +261,6 @@ for input in inputs:
 
     deltaPtcles = 1e-2
 
-    wake = Wake()
-
     eps_conv = 1e-4
 
     timeSimulation = 0.
@@ -330,14 +283,13 @@ for input in inputs:
         print('iteration, time, finaltime: ', it, t, timeSteps[-1])
         partsPerFil = 1
         timeSimulation += timeStep
-        update(Blades, wake, windVelocity, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil)
-
+        update(Blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, startTime, iterationVect)
+                
         postProcess = True
         if (postProcess):
             if (it == 0):
                 writeHubAndTower()
 
-            write_particles(outDir)
             write_blade_tp(Blades, outDir)
             write_filaments_tp(Blades, outDir)
 

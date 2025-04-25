@@ -1,4 +1,4 @@
-from pitchou.blade import *
+from sven.blade import *
 
 from scipy.spatial.transform import Rotation as R
 
@@ -26,8 +26,6 @@ class windTurbine:
 
     def updateTurbine(self, currentAzimuth):
 
-        # storedBlades = self.blades
-        # self.blades = []
         self.nNodes = len(self.nodesRadius)
         self.bladeRootOrientation = []
 
@@ -67,14 +65,10 @@ class windTurbine:
                 R2 = r2.as_matrix()
 
                 centersOrientationMatrix.append(np.dot(R1, R2))
-                # print('FullMatrix: ', np.dot(R1, R2))
 
                 # Evaluate elements translation velocity
                 # Velocity in hub reference frame, assuming not tilt, yaw, etc.
                 centerTranslationVelocity = np.asarray([0., 0., self.rotationalVelocity * centersRadius[i]], dtype=np.float32)
-                # if(i == 20 and iBlade == 0):
-                # print('Azimuth: ', np.degrees(currentAzimuth), self.rotationalVelocity * centersRadius[i], self.bladeRootOrientation[iBlade].apply(centerTranslationVelocity, inverse=True), self.bladeRootOrientation[iBlade].as_matrix())
-                # input()
                 # Projection into the "global" reference frame
                 centerTranslationVelocity = self.bladeRootOrientation[iBlade].apply(centerTranslationVelocity,
                                                                                     inverse=False)
@@ -87,7 +81,6 @@ class windTurbine:
 
                 R1 = r1.as_matrix()
                 R2 = r2.as_matrix()
-                # print("np.dot: ", np.dot(R1, R2))
                 nodesOrientationMatrix.append(np.dot(R1, R2))
 
                 nodeTranslationVelocity = np.asarray([0., 0., self.rotationalVelocity * self.nodesRadius[i]], dtype=np.float32)
@@ -103,16 +96,7 @@ class windTurbine:
             self.blades[iBlade].nodesOrientationMatrix = np.asarray(nodesOrientationMatrix, dtype=np.float32)
             self.blades[iBlade].centersOrientationMatrix = np.asarray(centersOrientationMatrix, dtype=np.float32)
             self.blades[iBlade].centers = .5 * (nodes[1:] + nodes[:-1])
-            # self.nodeChords = nodeChords
 
-            # self.blades[iBlade] = #.append(
-            #     Blade(nodes, self.nodesChord, self.centersAirfoils, centersOrientationMatrix, nodesOrientationMatrix,
-            #           centersTranslationVelocity,
-            #           nodesTranslationVelocity)#)  # centersOrientationMatrix, nodesOrientationMatrix) )
-            # if(len(storedBlades) > 0):
-                # print('in the loop ##########################################################"')
-                # self.blades[iBlade].oldGammaBound = storedBlades[iBlade].oldGammaBound
-                # print(storedBlades[iBlade].oldGammaBound)
 
         return self.blades
 

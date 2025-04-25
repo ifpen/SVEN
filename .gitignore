@@ -4,3 +4,4 @@ PITCHOU.egg-info
 
 
 examples/*/outputs/
+**/__pycache__/

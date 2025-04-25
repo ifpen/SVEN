@@ -4,172 +4,63 @@ import sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.dirname(script_dir)
 parent_of_project_dir = os.path.dirname(project_dir)
-
-# Add the project directory to the system path
 sys.path.append(parent_of_project_dir)
 
+from sven.windTurbine import *
+from sven.airfoil import *
+from sven.blade import *
+from sven.solver import *
+from utils.io import *
+from utils.definitions import *
 
-
-from pitchou.windTurbine import *
-from pitchou.airfoil import *
-from pitchou.blade import *
-from pitchou.solver import *
-from scipy import interpolate
-
-# Post-processing directory
-# Create target directory & all intermediate directories if don't exists
 outDir = 'outputs'
 if not os.path.exists(outDir):
     os.makedirs(outDir)
 else:
     print("Directory ", outDir, " already exists")
 
-def Wing(bladePitch, wingType):    
-    
-    if(wingType != "Elliptical" and wingType != "Rectangular"):
-        print("Non-existing wing type: ", wingType, " please use \"Elliptical\" or \"Rectangular\"")
-    
-    # Blade discretisation
-    nBladeCenters = 105
-    nearWakeLength = 540
+bladePitch = 5.
+nBladeCenters = 40
+AR = 6.
+bladeLength = 10.
+nearWakeLength = 100
 
-    AR = 6.
-    bladeLength = 10.
-    if(wingType == "Elliptical"):
-        cRoot = 4 * bladeLength / (AR * np.pi)    
-    elif(wingType == "Rectangular"):
-        cRoot = bladeLength / AR 
-        
-    uInfty = 1.
-
-    # Multiple straight wings
-    nodes = np.zeros([nBladeCenters + 1, 3])
-    nodes[:, 1] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
-    
-    if(wingType == "Rectangular"):
-        nodeChords = np.ones_like(nodes[:,0]) * cRoot
-    elif(wingType == "Elliptical"):        
-        nodeChords = np.zeros(len(nodes))
-        for i in range(len(nodes)):
-            nodeChords[i] = np.sqrt(np.abs(cRoot ** 2. * (1. - 4. * (nodes[i, 1] / bladeLength) ** 2.)))
-
-    airfoils = []
-    for i in range(len(nodes) - 1):
-        airfoils.append(Airfoil('../../data/flatPlate.foil'))
-
-    centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
-    for i in range(len(nodes) - 1):
-        r = R.from_euler('y', bladePitch, degrees=True)
-        centersOrientationMatrix[i] = r.as_matrix()
-
-    nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
-    for i in range(len(nodes)):
-        r = R.from_euler('y', bladePitch, degrees=True)
-        nodesOrientationMatrix[i] = r.as_matrix()
-
-    liftingLine1 = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
-                         np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
-
-    liftingLine1.updateFirstWakeRow()
-    liftingLine1.initializeWake()
-
-    Blades = []
-    Blades.append(liftingLine1)
-
-    # deltaFlts = np.sqrt(1)
-    deltaFlts = np.sqrt(1e-3)
-
-    return Blades, uInfty, deltaFlts
+uInfty = 1.
+deltaFlts = np.sqrt(1e-1)
 
 
-def write_particles(outDir):
-    output = open(outDir + '/New_Particles_tStep_' + str(it) + '.particles', 'w')
-    for i in range(len(wake.particlesPositionX)):
-        output.write(str(wake.particlesPositionX[i]) + " " + str(wake.particlesPositionY[i]) + " " + str(
-            wake.particlesPositionZ[i]) + " " + "\n")
-    output.close()
+Blades = Wing(bladePitch, nBladeCenters, AR, bladeLength, nearWakeLength)
 
-    return
 
-def write_filaments_tp(blades, outDir):
-
-    for (iBlade, blade) in enumerate(blades):
-        shape = np.shape(blade.wakeNodes)
-
-        output = open(outDir + '/Filaments_Nodes_' + '_Blade_'+str(iBlade)+'_tStep_'+str(it)+'.tp', 'w')
-        output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
-        output.write('ZONE T="Near-wake" I='+str(shape[0])+' J='+str(shape[1]-1)+', K=1, DT=(SINGLE SINGLE SINGLE SINGLE)\n')
-        for j in range(np.shape(blade.wakeNodes)[1]-1):
-            for i in range(np.shape(blade.wakeNodes)[0]):
-                output.write(str(blade.wakeNodes[i,j,0]) + " " + str(blade.wakeNodes[i,j,1]) + " " + str(blade.wakeNodes[i,j,2]) + " " +str(blade.trailFilamentsCirculation[i,j]) + "\n")
-        output.close()
-
-    return
-
-def write_blade_tp(blades, outDir):
-
-    for (iBlade, blade) in enumerate(blades):
-        shape = len(blade.bladeNodes)
-
-        output = open(outDir + '/Blade_'+str(iBlade)+'_Nodes_tStep_'+str(it)+'.tp', 'w')
-        output.write('TITLE="Near-wake nodes"\n')
-        output.write('VARIABLES="X" "Y" "Z"\n')
-        output.write('ZONE T="Near-wake" I='+str(shape)+' J='+str(2)+', K=1, DT=(SINGLE SINGLE SINGLE)\n')
-        for i in range(shape):
-                output.write(str(blade.bladeNodes[i,0]-1./4.*blade.nodeChords[i]) + " " + str(blade.bladeNodes[i,1]) + " " + str(blade.bladeNodes[i,2]) + "\n")
-        for i in range(shape):
-                output.write(str(blade.trailingEdgeNode[i,0]) + " " + str(blade.trailingEdgeNode[i,1]) + " " + str(blade.trailingEdgeNode[i,2]) + "\n")
-        output.close()
-    return
-
-Blades, uInfty, deltaFlts = Wing(5., "Elliptical")
-
-nodes = Blades[0].bladeNodes
-nNodes = len(nodes)
-distances = np.zeros(len(nodes)-1)
-for i in range(len(nodes)-1):
-    distances[i] = np.linalg.norm( nodes[i+1,:] - nodes[i,:] )
-meanDistance = np.mean(distances)
-
-relax = 0.5
 timeStep = 0.1
-# timeStep = meanDistance / uInfty * relax #0.025
-timeEnd  = 540.*timeStep
+timeEnd  = nearWakeLength*timeStep
 innerIter = 10
 timeSteps = np.arange(0., timeEnd, timeStep)
 
 deltaPtcles = 1e-4
 partsPerFil = 1
 
-wake = Wake()
-
 eps_conv = 1e-4
-print('coucou')
 timeSimulation = 0.
 iterationVect = []
 startTime = time.time()
-useGPU = False
 for (it, t) in enumerate(timeSteps):
 
     print('iteration, time, finaltime: ', it, t, timeSteps[-1])
     timeSimulation += timeStep
-    update(Blades, wake, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, deltaPtcles, eps_conv, partsPerFil, startTime, iterationVect, useGPU)
+    update(Blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, startTime, iterationVect)
     
     postProcess = False
     if(postProcess):
-        write_particles(outDir)
         write_blade_tp(Blades, outDir)
         write_filaments_tp(Blades, outDir)
 
-    if(it % 25 == 0):
-        output = open('/work/leguerca/Pitchou/vortex_caroline/examples/ellipticalWing/outputs/elliptical_case_results/liftDistribution_elliptical_dt_0_001_case_ONE_BLOCK.dat', 'w')
-        centers = Blades[0].centers
-        liftDistribution = Blades[0].lift
-        for i in range(len(centers)):
-            output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
-        output.close()        
+    output = open('./outputs/liftDistribution_elliptical.dat', 'w')
+    centers = Blades[0].centers
+    liftDistribution = Blades[0].lift
+    for i in range(len(centers)):
+        output.write(str(centers[i][1]) + ' ' + str(liftDistribution[i])  + '\n')
+    output.close()        
 
-    np.savetxt("simulationTimes.dat", iterationVect)
+    
 
-print('Total simulation time: ', time.time() - startTime)
