@@ -24,7 +24,8 @@ class Blade:
     nodesTranslationVelocity :
         blahblahblah
     """
-    def __init__(self, nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix, nodesOrientationMatrix,
+    def __init__(self, nodes, nodeChords, nearWakeLength, airfoils, 
+                 centersOrientationMatrix, nodesOrientationMatrix,
                  centersTranslationVelocity, nodesTranslationVelocity):
 
         self.nearWakeLength = nearWakeLength
@@ -51,19 +52,29 @@ class Blade:
         self.prevCentersTranslationVelocity = centersTranslationVelocity
         self.prevNodesTranslationVelocity = nodesTranslationVelocity
 
-        self.inductionsFromWake = np.zeros([len(self.centers), 3], dtype=np.float32)
-        self.inductionsAtNodes = np.zeros([len(self.bladeNodes), 3], dtype=np.float32)
+        self.inductionsFromWake = np.zeros([len(self.centers), 3], 
+                                           dtype=np.float32)
+        self.inductionsAtNodes = np.zeros([len(self.bladeNodes), 3], 
+                                          dtype=np.float32)
 
         self.lift = np.zeros((len(self.centers)), dtype=np.float32)
         self.drag = np.zeros((len(self.centers)), dtype=np.float32)
 
-        self.effectiveVelocity = np.zeros((len(self.centers)), dtype=np.float32)
+        self.effectiveVelocity = np.zeros((len(self.centers)), 
+                                          dtype=np.float32)
 
-        self.wakeNodesInductions = np.zeros([len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
-        self.trailFilamentsCirculation = np.zeros([len(self.bladeNodes), self.nearWakeLength-1], dtype=np.float32)
-        self.shedFilamentsCirculation = np.zeros([len(self.bladeNodes)-1, self.nearWakeLength], dtype=np.float32)
+        self.wakeNodesInductions = np.zeros([len(self.bladeNodes), 
+                                             self.nearWakeLength,3], 
+                                             dtype=np.float32)
+        self.trailFilamentsCirculation = np.zeros([len(self.bladeNodes), 
+                                            self.nearWakeLength-1], 
+                                            dtype=np.float32)
+        self.shedFilamentsCirculation = np.zeros([len(self.bladeNodes)-1, 
+                                                  self.nearWakeLength], 
+                                                  dtype=np.float32)
 
-        self.wakeNodes = np.zeros([len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
+        self.wakeNodes = np.zeros([len(self.bladeNodes), 
+                                   self.nearWakeLength,3], dtype=np.float32)
 
 
         return
