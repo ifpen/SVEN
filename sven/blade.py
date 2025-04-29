@@ -12,21 +12,22 @@ class Blade:
     nodeChords : int, optional
         Length of the file header to skip (default is 0).
     nearWakeLength : 
-        blahblahblah
+        
     airfoils : 
-        blahblahblah
+        
     centersOrientationMatrix :
-        blahblahblah
+        
     nodesOrientationMatrix :
-        blahblahblah 
+         
     centersTranslationVelocity : 
-        blahblahblah
+        
     nodesTranslationVelocity :
-        blahblahblah
+        
     """
-    def __init__(self, nodes, nodeChords, nearWakeLength, airfoils, 
-                 centersOrientationMatrix, nodesOrientationMatrix,
-                 centersTranslationVelocity, nodesTranslationVelocity):
+    def __init__(
+        self, nodes, nodeChords, nearWakeLength, airfoils, 
+        centersOrientationMatrix, nodesOrientationMatrix,
+        centersTranslationVelocity, nodesTranslationVelocity):
 
         self.nearWakeLength = nearWakeLength
 
@@ -52,29 +53,25 @@ class Blade:
         self.prevCentersTranslationVelocity = centersTranslationVelocity
         self.prevNodesTranslationVelocity = nodesTranslationVelocity
 
-        self.inductionsFromWake = np.zeros([len(self.centers), 3], 
-                                           dtype=np.float32)
-        self.inductionsAtNodes = np.zeros([len(self.bladeNodes), 3], 
-                                          dtype=np.float32)
+        self.inductionsFromWake = np.zeros(
+            [len(self.centers), 3], dtype=np.float32)
+        self.inductionsAtNodes = np.zeros(
+            [len(self.bladeNodes), 3], dtype=np.float32)
 
         self.lift = np.zeros((len(self.centers)), dtype=np.float32)
         self.drag = np.zeros((len(self.centers)), dtype=np.float32)
 
-        self.effectiveVelocity = np.zeros((len(self.centers)), 
-                                          dtype=np.float32)
+        self.effectiveVelocity = np.zeros((len(self.centers)), dtype=np.float32)
 
-        self.wakeNodesInductions = np.zeros([len(self.bladeNodes), 
-                                             self.nearWakeLength,3], 
-                                             dtype=np.float32)
-        self.trailFilamentsCirculation = np.zeros([len(self.bladeNodes), 
-                                            self.nearWakeLength-1], 
-                                            dtype=np.float32)
-        self.shedFilamentsCirculation = np.zeros([len(self.bladeNodes)-1, 
-                                                  self.nearWakeLength], 
-                                                  dtype=np.float32)
+        self.wakeNodesInductions = np.zeros(
+            [len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
+        self.trailFilamentsCirculation = np.zeros(
+            [len(self.bladeNodes), self.nearWakeLength-1], dtype=np.float32)
+        self.shedFilamentsCirculation = np.zeros(
+            [len(self.bladeNodes)-1, self.nearWakeLength], dtype=np.float32)
 
-        self.wakeNodes = np.zeros([len(self.bladeNodes), 
-                                   self.nearWakeLength,3], dtype=np.float32)
+        self.wakeNodes = np.zeros(
+            [len(self.bladeNodes), self.nearWakeLength,3], dtype=np.float32)
 
 
         return
@@ -146,15 +143,17 @@ class Blade:
         uWind = np.zeros(3)
         uWind[0] = uInfty
 
-        uEffective = uWind - self.centersTranslationVelocity + nearWakeInducedVelocities + \
-                     self.inductionsFromWake
+        uEffective = (
+            uWind - self.centersTranslationVelocity + nearWakeInducedVelocities + 
+            self.inductionsFromWake)
 
         r = R.from_matrix(self.centersOrientationMatrix)
         uEffectiveInElementRef = r.apply(uEffective, inverse=True)
 
         # 2D assumption
         uEffectiveInElementRef[:, 1] = 0.
-        self.attackAngle = np.arctan2(uEffectiveInElementRef[:, 2], uEffectiveInElementRef[:, 0])
+        self.attackAngle = np.arctan2(
+            uEffectiveInElementRef[:, 2], uEffectiveInElementRef[:, 0])
 
 
         for i in range(len(self.centers)):
@@ -182,17 +181,22 @@ class Blade:
 
         leftNodes = np.zeros((length,3), dtype=np.float32)
         leftNodes[:len(self.bladeNodes),:] = self.bladeNodes[:,:]
-        leftNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = self.trailingEdgeNode[0:-1,:]
-        leftNodes[len(self.bladeNodes)+len(self.centers):,:] = self.bladeNodes[0:-1,:]
+        leftNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = (
+            self.trailingEdgeNode[0:-1,:])
+        leftNodes[len(self.bladeNodes)+len(self.centers):,:] = (
+            self.bladeNodes[0:-1,:])
 
         rightNodes = np.zeros((length,3), dtype=np.float32)
         rightNodes[:len(self.bladeNodes),:] = self.trailingEdgeNode[:,:]
-        rightNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = self.trailingEdgeNode[1:]
-        rightNodes[len(self.bladeNodes)+len(self.centers):,:] = self.bladeNodes[1:]
+        rightNodes[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers),:] = (
+            self.trailingEdgeNode[1:])
+        rightNodes[len(self.bladeNodes)+len(self.centers):,:] = (
+            self.bladeNodes[1:])
 
         circulations = np.zeros(length, dtype=np.float32)
         circulations[:len(self.bladeNodes)] = self.gammaTrail
-        circulations[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers)] = self.gammaShed
+        circulations[len(self.bladeNodes):len(self.bladeNodes)+len(self.centers)] = (
+            self.gammaShed)
         circulations[len(self.bladeNodes)+len(self.centers):] = self.newGammaBound
 
         return leftNodes, rightNodes, circulations
@@ -211,16 +215,19 @@ class Blade:
         for i in range(len(self.bladeNodes)):
             leftNodes.append(self.trailingEdgeNode[i])
             rightNodes.append(self.trailingEdgeNode[i] + (
-                    uInfty - self.prevNodesTranslationVelocity[i] + self.inductionsAtNodes[i]) * tStep)
+                    uInfty - self.prevNodesTranslationVelocity[i] + 
+                    self.inductionsAtNodes[i]) * tStep)
             circulations.append(self.gammaTrail[i])
 
         # Then shed filaments
         if (includeShed):
             for i in range(len(self.centers)):
                 leftNodes.append(self.trailingEdgeNode[i] + (
-                        uInfty - self.prevNodesTranslationVelocity[i] + self.inductionsAtNodes[i]) * tStep)
+                        uInfty - self.prevNodesTranslationVelocity[i] + 
+                        self.inductionsAtNodes[i]) * tStep)
                 rightNodes.append(self.trailingEdgeNode[i + 1] + (
-                        uInfty - self.prevNodesTranslationVelocity[i + 1] + self.inductionsAtNodes[i+1]) * tStep)
+                        uInfty - self.prevNodesTranslationVelocity[i + 1] + 
+                        self.inductionsAtNodes[i+1]) * tStep)
                 circulations.append(self.gammaShed[i])
 
         leftNodes = np.asarray(leftNodes)
