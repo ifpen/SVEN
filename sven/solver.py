@@ -1,10 +1,12 @@
 import time
 from sven.inductions import *
 
-def update(blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, startTime, iterationVect):
+def update(
+    blades, uInfty, timeStep, timeSimulation, innerIter, 
+    deltaFlts, startTime, iterationVect):
+
     iterationTime = time.time()
     
-
     #############################################################################################
     # Initialize all inductions
     #############################################################################################
@@ -34,9 +36,11 @@ def update(blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, start
     nearWakeLength = 0
     for blade in blades:
         if (blade.nearWakeLength == 2):
-            bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getFilamentsInfo(uInfty, timeStep)
+            bladeLeftNodes, bladeRightNodes, bladeCirculations = ( 
+                blade.getFilamentsInfo(uInfty, timeStep))
         else:
-            bladeLeftNodes, bladeRightNodes, bladeCirculations = blade.getLastFilamentsInfo(uInfty, timeStep)
+            bladeLeftNodes, bladeRightNodes, bladeCirculations = (
+                blade.getLastFilamentsInfo(uInfty, timeStep))
         nearWakeLength = blade.nearWakeLength
 
         leftNodes = np.concatenate((leftNodes, bladeLeftNodes), axis=0)
@@ -47,7 +51,8 @@ def update(blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, start
     print('addParticles: ', t1 - t0)
 
     ############################################################################################
-    # "wakeFilamentsInductionsOnBladeOrWake" : compute the filaments' induction on blade centers
+    # "wakeFilamentsInductionsOnBladeOrWake" : compute the filaments' induction 
+    #                                          on blade centers
     ############################################################################################
     t0 = time.time()
     if (nearWakeLength > 2):

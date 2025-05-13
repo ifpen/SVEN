@@ -4,4 +4,6 @@ PITCHOU.egg-info
 
 
 examples/*/outputs/
+examples/ellipticalWing/elliptical_case_plot.eps
+examples/newMexico/ForceComparison.png
 **/__pycache__/
