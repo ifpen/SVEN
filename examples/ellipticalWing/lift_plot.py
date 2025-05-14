@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-# Global settings for consistent and high-quality plot appearance using rcParams
 scale = 1.0
 plt.rcParams['mathtext.fontset'] = 'stix'
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -15,10 +14,6 @@ plt.rcParams['ytick.labelsize'] = 8 * scale
 plt.rcParams['legend.fontsize'] = 8 * scale
 plt.rcParams['figure.dpi'] = 300  
 plt.rcParams['savefig.dpi'] = 300  
-
-# Data loading and processing
-ellipticalCase = True
-
 
 
 CL_vortex_elliptical = np.genfromtxt('./outputs/liftDistribution_elliptical.dat')

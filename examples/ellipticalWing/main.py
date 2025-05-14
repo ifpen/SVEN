@@ -18,7 +18,9 @@ os.makedirs(outDir, exist_ok=True)
 if os.path.exists(outDir):
     print(f"The '{outDir}' directory already exists.")
 
-############ Filament writing functions #######################################
+# -----------------------------------------------------------------------------
+# Filament writing functions 
+# -----------------------------------------------------------------------------
 
 def write_filaments_tp(blades, outDir, it):
     for iBlade, blade in enumerate(blades):
@@ -64,8 +66,9 @@ def write_blade_tp(blades, outDir, it):
                     f"{blade.trailingEdgeNode[i, 2]}\n"
                 )
 
-
-#################### Wing definition ##########################################
+# -----------------------------------------------------------------------------
+# Wing definition 
+# -----------------------------------------------------------------------------
 
 # wing and simulation parameters
 
@@ -114,8 +117,9 @@ def Wing(bladePitch, nBladeCenters, AR, bladeLength, nearWakeLength):
 Blades = Wing(bladePitch, nBladeCenters, AR, bladeLength, nearWakeLength)
 
 
-
-################## Time loop ##################################################
+# -----------------------------------------------------------------------------
+# Time loop 
+# -----------------------------------------------------------------------------
 
 # Time loop parameters
 timeStep = 0.1
@@ -140,7 +144,7 @@ for it, t in enumerate(timeSteps):
         write_blade_tp(Blades, outDir, it)
         write_filaments_tp(Blades, outDir, it)
 
-################## Saving data for lift distribution ##########################
+# Saving data for lift distribution 
 
 output_file = os.path.join(outDir, 'liftDistribution_elliptical.dat')
 with open(output_file, 'w') as output:

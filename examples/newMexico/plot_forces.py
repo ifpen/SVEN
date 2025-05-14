@@ -1,42 +1,108 @@
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import glob
+import os
 
-# Update default matplotlib parameters (font size, etc.)
+# -------------------------
+# Choose a wind speed
+# -------------------------
+wind_speed = 24  # choose between 10, 15, ou 24
+case_str = str(wind_speed)
+
 scale = 0.8
-matplotlib.rcParams.update({'axes.titlesize': 24 * scale})
-matplotlib.rcParams.update({'axes.labelsize': 24 * scale})
-matplotlib.rcParams.update({'lines.linewidth': 3})
-matplotlib.rcParams.update({'lines.markersize': 8})
-matplotlib.rcParams.update({'xtick.labelsize': 20 * scale})
-matplotlib.rcParams.update({'ytick.labelsize': 20 * scale})
-matplotlib.rcParams.update({'legend.fontsize': 19 * scale})
+matplotlib.rcParams.update({
+    'axes.titlesize': 24 * scale,
+    'axes.labelsize': 24 * scale,
+    'lines.linewidth': 2.5,
+    'lines.markersize': 8,
+    'xtick.labelsize': 20 * scale,
+    'ytick.labelsize': 20 * scale,
+    'legend.fontsize': 24 * scale,
+    'legend.frameon': True,
+    'legend.framealpha': 0.8,
+    'legend.fancybox': True,
+    'legend.borderpad': 0.8
+})
 
-f, ax = plt.subplots(ncols=2, figsize=(16,6))
 
-data = np.genfromtxt('./outputs/liftDistribution_case_10.dat')
-ax[0].plot(data[:,0], data[:,1], '-')
-# data = np.genfromtxt('/work/blondelf/work/Calculs/MexNext/MexNext3_Axial_Third_Round_February_2017/To_MexNext/IFPEN_VL_2D/Loads_CASTOR.dat', skip_header=3)
-# ax[0].plot(data[:,0], data[:,3], '--')
-ax[0].legend(['PITCHOU', 'CASTOR'])
-ax[0].grid()
-ax[0].set_xlabel('Distance to hub center (m)')
-ax[0].set_ylabel('Normal force (N/m)')
-ax[0].set_xlim([0., 2.25])
-ax[0].set_ylim([0., 100.])
+col_map = {
+    '10': (0, 1, 2),
+    '15': (0, 3, 4),
+    '24': (0, 5, 6)
+}
+x_col, fn_col, ft_col = col_map[case_str]
 
-data = np.genfromtxt('./outputs/liftDistribution_case_10.dat')
-ax[1].plot(data[:,0], data[:,2], '-')
-# data = np.genfromtxt('/work/blondelf/work/Calculs/MexNext/MexNext3_Axial_Third_Round_February_2017/To_MexNext/IFPEN_VL_2D/Loads_CASTOR.dat', skip_header=3)
-# ax[1].plot(data[:,0], data[:,4], '--')
-#plt.legend(['PITCHOU', 'CASTOR'])
-ax[1].grid()
-ax[1].set_xlabel('Distance to hub center (m)')
-ax[1].set_ylabel('Tangential force (N/m)')
-ax[1].set_xlim([0., 2.25])
-ax[1].set_ylim([0., 60.])
+data_castor = np.genfromtxt('CASTOR_data.dat', skip_header=3)
+x_castor = data_castor[:, x_col]
+fn_castor = data_castor[:, fn_col]
+ft_castor = data_castor[:, ft_col]
 
+f, ax = plt.subplots(ncols=2, figsize=(14, 6))
+
+# CASTOR
+line_fn_castor, = ax[0].plot(x_castor, fn_castor, 'r:', label='CASTOR')
+line_ft_castor, = ax[1].plot(x_castor, ft_castor, 'r:', label='CASTOR')
+
+# SVEN 
+line_fn_sven, = ax[0].plot([], [], 'g--', label='SVEN')
+line_ft_sven, = ax[1].plot([], [], 'g--', label='SVEN')
+
+# Format axes
+for a in ax:
+    a.set_xlim([0., 2.25])
+    a.grid()
+    a.relim()
+    a.autoscale_view()
+
+ax[0].set_xlabel('Blade centers [m]')
+ax[0].set_ylabel('Fn [N/m]')
+
+ax[1].set_xlabel('Blade centers [m]')
+ax[1].set_ylabel('Ft [N/m]')
+
+# Légende globale
+f.legend(['CASTOR', 'SVEN'], loc='upper center', ncol=2, frameon=True, bbox_to_anchor=(0.55, 1.01))
 plt.tight_layout()
+plt.subplots_adjust(top=0.85)
 
-plt.savefig('ForceComparison.png', format='png', dpi=300)
+# -------------------------
+# Fonction de mise à jour
+# -------------------------
+def update_sven_plot(event=None):
+    try:
+        files = glob.glob(f'./outputs/bladeForces_case_{case_str}_*.dat')
+        if not files:
+            print(f"Aucun fichier trouvé pour le cas {case_str} m/s.")
+            return
+        latest_file = max(files, key=os.path.getmtime)
+        data_sven = np.genfromtxt(latest_file)
+        if data_sven.shape[1] < 3:
+            print("Fichier incomplet :", latest_file)
+            return
+
+        # Mise à jour des courbes SVEN
+        line_fn_sven.set_data(data_sven[:, 0], data_sven[:, 1])
+        line_ft_sven.set_data(data_sven[:, 0], data_sven[:, 2])
+
+        # Réajustement des axes
+        for a in ax:
+            a.relim()
+            a.autoscale_view()
+
+        f.canvas.draw()
+        print("Données mises à jour depuis :", latest_file)
+    except Exception as e:
+        print("Erreur lors de la mise à jour :", e)
+
+# -------------------------
+# Connexion événement clavier
+# -------------------------
+f.canvas.mpl_connect('key_press_event', lambda event: update_sven_plot(event) if event.key == 'u' else None)
+
+# -------------------------
+# Mise à jour initiale
+# -------------------------
+update_sven_plot()
+
 plt.show()

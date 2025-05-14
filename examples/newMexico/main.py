@@ -61,10 +61,11 @@ def NewMexicoWindTurbine(windVelocity,density,nearWakeLength):
         nodesRadius, nodesChord, nearWakeLength, centersAirfoils, 
         nodesTwistAngles, myWT.nBlades)
 
-    return blades, myWT, windVelocity, density, 0.1, 1e-4
+    return blades, myWT, windVelocity, density, 0.01, 1e-4
 
-
-################# Some functions for filament outputs #######################
+# -----------------------------------------------------------------------------
+# Some functions for filament outputs 
+# -----------------------------------------------------------------------------
 
 def write_filaments_tp(blades, outDir, it):
 
@@ -115,14 +116,20 @@ def write_blade_tp(blades, outDir, it):
         output.close()
     return
 
+# -----------------------------------------------------------------------------
+# Choose a wind velocity and wake parameters 
+# -----------------------------------------------------------------------------
 
-######## Choose a wind velocity #############################
-
-cases = ["10"]#, "15", "24"]
-nearWakeLength = 360
+cases = ["24"]#, "15", "24"]
+nearWakeLength = 3600
 innerIter  = 12
 nRotations = 15.
 DegreesPerTimeStep = 10.
+
+# Choose if you want post process files to be written 
+
+wakePostProcess = False
+forcesPostProcess = True
 
 
 for caseID in cases:
@@ -141,11 +148,12 @@ for caseID in cases:
     timeStep = np.radians(DegreesPerTimeStep) / WindTurbine.rotationalVelocity
     
     timeEnd = np.radians(nRotations * 360.) / WindTurbine.rotationalVelocity
-    eps_conv = 1e-4
     refAzimuth = -WindTurbine.rotationalVelocity * timeStep
     timeSteps = np.arange(0., timeEnd, timeStep)
 
-    eps_conv = 1e-4
+# -----------------------------------------------------------------------------
+# Time loop 
+# -----------------------------------------------------------------------------
 
     timeSimulation = 0.
     iterationVect = []
@@ -163,8 +171,7 @@ for caseID in cases:
             Blades, uInfty, timeStep, timeSimulation, innerIter, deltaFlts, 
             startTime, iterationVect)
 
-        wakePostProcess = True
-        forcesPostProcess = True
+        
 
         if(wakePostProcess):
             write_blade_tp(Blades, outDir, it)
