@@ -8,7 +8,6 @@ project_dir = os.path.dirname(script_dir)
 parent_of_project_dir = os.path.dirname(project_dir)
 sys.path.append(parent_of_project_dir)
 
-from sven.windTurbine import *
 from sven.airfoil import *
 from sven.blade import *
 from sven.solver import *

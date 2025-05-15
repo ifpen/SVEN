@@ -1,4 +1,5 @@
 import os
+import matplotlib.pyplot as plt
 
 from sven.windTurbine import *
 from sven.airfoil import *
@@ -15,6 +16,57 @@ if not os.path.exists(outDir):
     os.makedirs(outDir)
 else:
     print("Directory ", outDir, " already exists")
+
+
+# -----------------------------------------------------------------------------
+# Filament writing functions 
+# -----------------------------------------------------------------------------
+
+def write_filaments_tp(blades, outDir, it):
+    for iBlade, blade in enumerate(blades):
+        shape = np.shape(blade.wakeNodes)
+
+        file_path = os.path.join(
+            outDir, 
+            f'Filaments_Nodes_Blade_{iBlade}_tStep_{it}.tp')
+        with open(file_path, 'w') as output:
+            output.write('TITLE="Near-wake nodes"\n')
+            output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
+            output.write(
+                f'ZONE T="Near-wake" I={shape[0]} J={shape[1]-1}, K=1, '
+                'DT=(SINGLE SINGLE SINGLE SINGLE)\n'
+            )
+            for j in range(shape[1] - 1):
+                for i in range(shape[0]):
+                    output.write(
+                        f"{blade.wakeNodes[i, j, 0]} {blade.wakeNodes[i, j, 1]} "
+                        f"{blade.wakeNodes[i, j, 2]} {blade.trailFilamentsCirculation[i, j]}\n"
+                    )
+
+def write_blade_tp(blades, outDir, it):
+    for iBlade, blade in enumerate(blades):
+        shape = len(blade.bladeNodes)
+
+        file_path = os.path.join(outDir, f'Blade_{iBlade}_Nodes_tStep_{it}.tp')
+        with open(file_path, 'w') as output:
+            output.write('TITLE="Near-wake nodes"\n')
+            output.write('VARIABLES="X" "Y" "Z"\n')
+            output.write(
+                f'ZONE T="Near-wake" I={shape} J=2, K=1, '
+                'DT=(SINGLE SINGLE SINGLE)\n'
+            )
+            for i in range(shape):
+                output.write(
+                    f"{blade.bladeNodes[i, 0] - 1. / 4. * blade.nodeChords[i]} "
+                    f"{blade.bladeNodes[i, 1]} {blade.bladeNodes[i, 2]}\n"
+                )
+            for i in range(shape):
+                output.write(
+                    f"{blade.trailingEdgeNode[i, 0]} {blade.trailingEdgeNode[i, 1]} "
+                    f"{blade.trailingEdgeNode[i, 2]}\n"
+                )
+
+
 
 def writeHubAndTower():
     xBase = +10.
@@ -346,6 +398,5 @@ for (it, t) in enumerate(timeSteps):
             output.close()
 print('Total simulation time: ', time.time() - startTime)
 
-import matplotlib.pyplot as plt
 plt.plot(azims, midBladeAoA, 'o-')
 plt.savefig('aoaEvolution.png', format='png', dpi=200)
