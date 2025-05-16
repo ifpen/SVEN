@@ -3,14 +3,15 @@ import sys
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-project_dir = os.path.dirname(script_dir)
-parent_of_project_dir = os.path.dirname(project_dir)
-sys.path.append(parent_of_project_dir)
+# script_dir = os.path.dirname(os.path.abspath(__file__))
+# project_dir = os.path.dirname(script_dir)
+# parent_of_project_dir = os.path.dirname(project_dir)
+# sys.path.append(parent_of_project_dir)
 
-from sven.airfoil import *
-from sven.blade import *
-from sven.solver import *
+from sven import Airfoil
+from sven import Blade
+from sven.solver import update 
+import time 
 
 outDir = 'outputs'
 os.makedirs(outDir, exist_ok=True)

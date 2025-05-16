@@ -4,8 +4,6 @@ import sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.dirname(script_dir)
 parent_of_project_dir = os.path.dirname(project_dir)
-
-# Add the project directory to the system path
 sys.path.append(parent_of_project_dir)
 
 from sven.windTurbine import *
