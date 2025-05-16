@@ -9,7 +9,7 @@
 
 Include the python folders to be able to run the examples. This can be done before calling the scripts :
 
- <pre> ```bash export PYTHONPATH=/path/to/repo:$PYTHONPATH ``` </pre> 
+```python export PYTHONPATH=/path/to/repo:$PYTHONPATH ```  
 
 
 Or inside the scripts : 
