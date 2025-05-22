@@ -31,6 +31,3 @@ This code is designed to enable the exploration and testing of different models 
 Caroline Le Guern, Frédéric Blondel @ IFP Energies nouvelles
 
 
-**TODO list:**
-- Packaging (distutils, setup.py)
-- Near-wake filaments

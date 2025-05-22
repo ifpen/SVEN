@@ -1,9 +1,25 @@
 from sven.blade import *
-
 from scipy.spatial.transform import Rotation as R
 
 
 class windTurbine:
+    """Class to define a wind turbine.
+
+    Parameters
+    ----------
+    nBlades : int
+        Number of blades in the turbine.
+    hubCenter : ndarray
+        Position of the turbine hub.
+    hubRadius : float
+        Radius of the turbine hub.
+    rotationalVelocity : float
+        Angular velocity of the turbine (rad/s).
+    windVelocity : float
+        Wind speed (m/s).
+    bladePitch : float
+        Pitch angle of the blades (rad).
+    """
     def __init__(self, nBlades, hubCenter, hubRadius, rotationalVelocity, 
                  windVelocity, bladePitch):
 
@@ -26,6 +42,9 @@ class windTurbine:
         return
 
     def updateTurbine(self, currentAzimuth):
+        """
+        Updates the turbine configuration based on the current azimuth angle.
+        """
 
         self.nNodes = len(self.nodesRadius)
         self.bladeRootOrientation = []
@@ -136,6 +155,10 @@ class windTurbine:
     def initializeTurbine(
         self, nodesRadius, nodesChord, nearWakeLength, centersAirfoils, 
         nodesTwistAngles, nBlades):
+        """
+        Initializes the turbine by setting up the blade nodes, airfoils, and 
+        wake properties.
+        """
 
         self.nodesRadius = nodesRadius
         self.nodesChord = nodesChord
@@ -167,6 +190,10 @@ class windTurbine:
         return blades
 
     def evaluateForces(self, density):
+        """
+        Evaluates the aerodynmic forces (normal and tangential) on the turbine
+        blades.
+        """
 
         attackAngles = self.blades[0].attackAngle
         lift = self.blades[0].lift

@@ -19,52 +19,57 @@ else:
 
 
 # -----------------------------------------------------------------------------
-# Filament writing functions 
+# Some functions for filament outputs 
 # -----------------------------------------------------------------------------
 
 def write_filaments_tp(blades, outDir, it):
-    for iBlade, blade in enumerate(blades):
+
+    for (iBlade, blade) in enumerate(blades):
         shape = np.shape(blade.wakeNodes)
 
-        file_path = os.path.join(
-            outDir, 
-            f'Filaments_Nodes_Blade_{iBlade}_tStep_{it}.tp')
-        with open(file_path, 'w') as output:
-            output.write('TITLE="Near-wake nodes"\n')
-            output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
-            output.write(
-                f'ZONE T="Near-wake" I={shape[0]} J={shape[1]-1}, K=1, '
-                'DT=(SINGLE SINGLE SINGLE SINGLE)\n'
-            )
-            for j in range(shape[1] - 1):
-                for i in range(shape[0]):
-                    output.write(
-                        f"{blade.wakeNodes[i, j, 0]} {blade.wakeNodes[i, j, 1]} "
-                        f"{blade.wakeNodes[i, j, 2]} {blade.trailFilamentsCirculation[i, j]}\n"
-                    )
+        output = open(
+            outDir + '/Filaments_Nodes_' + '_Blade_'+str(iBlade)+'_tStep_'+
+            str(it)+'.tp', 'w')
+        output.write('TITLE="Near-wake nodes"\n')
+        output.write('VARIABLES="X" "Y" "Z" "Circulation"\n')
+        output.write(
+            'ZONE T="Near-wake" I='+str(shape[0])+' J='+str(shape[1]-1)+
+            ', K=1, DT=(SINGLE SINGLE SINGLE SINGLE)\n')
+        for j in range(np.shape(blade.wakeNodes)[1]-1):
+            for i in range(np.shape(blade.wakeNodes)[0]):
+                output.write(
+                    str(blade.wakeNodes[i,j,0]) + " " + 
+                    str(blade.wakeNodes[i,j,1]) + " " + 
+                    str(blade.wakeNodes[i,j,2]) + " " +
+                    str(blade.trailFilamentsCirculation[i,j]) + "\n")
+        output.close()
+
+    return
 
 def write_blade_tp(blades, outDir, it):
-    for iBlade, blade in enumerate(blades):
+
+    for (iBlade, blade) in enumerate(blades):
         shape = len(blade.bladeNodes)
 
-        file_path = os.path.join(outDir, f'Blade_{iBlade}_Nodes_tStep_{it}.tp')
-        with open(file_path, 'w') as output:
-            output.write('TITLE="Near-wake nodes"\n')
-            output.write('VARIABLES="X" "Y" "Z"\n')
-            output.write(
-                f'ZONE T="Near-wake" I={shape} J=2, K=1, '
-                'DT=(SINGLE SINGLE SINGLE)\n'
-            )
-            for i in range(shape):
+        output = open(
+            outDir + '/Blade_'+str(iBlade)+'_Nodes_tStep_'+str(it)+'.tp', 'w')
+        output.write('TITLE="Near-wake nodes"\n')
+        output.write('VARIABLES="X" "Y" "Z"\n')
+        output.write(
+            'ZONE T="Near-wake" I='+str(shape)+' J='+str(2)+
+            ', K=1, DT=(SINGLE SINGLE SINGLE)\n')
+        for i in range(shape):
                 output.write(
-                    f"{blade.bladeNodes[i, 0] - 1. / 4. * blade.nodeChords[i]} "
-                    f"{blade.bladeNodes[i, 1]} {blade.bladeNodes[i, 2]}\n"
-                )
-            for i in range(shape):
+                    str(blade.bladeNodes[i,0]-1./4.*blade.nodeChords[i]) + " " + 
+                    str(blade.bladeNodes[i,1]) + " " + 
+                    str(blade.bladeNodes[i,2]) + "\n")
+        for i in range(shape):
                 output.write(
-                    f"{blade.trailingEdgeNode[i, 0]} {blade.trailingEdgeNode[i, 1]} "
-                    f"{blade.trailingEdgeNode[i, 2]}\n"
-                )
+                    str(blade.trailingEdgeNode[i,0]) + " " + 
+                    str(blade.trailingEdgeNode[i,1]) + " " + 
+                    str(blade.trailingEdgeNode[i,2]) + "\n")
+        output.close()
+    return
 
 
 

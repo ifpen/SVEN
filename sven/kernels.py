@@ -1,12 +1,15 @@
 from numba import jit, njit, prange
 import numpy as np
-
 import pycuda.autoinit
 import pycuda.driver as drv
 from pycuda.compiler import SourceModule
 
 @jit(nopython=True, fastmath=True)
-def biotSavartFilaments(evaluationPoints, leftNodes, rightNodes, circulations, deltaFlts):
+def biotSavartFilaments(evaluationPoints, leftNodes, rightNodes, circulations, 
+                        deltaFlts):
+    """
+    Computes induced velocities using the Biot-Savart law on CPU
+    """
     #
     inducedVelocities = np.zeros((len(evaluationPoints),3))
     #
@@ -58,11 +61,18 @@ def biotSavartFilaments(evaluationPoints, leftNodes, rightNodes, circulations, d
             #
     return inducedVelocities / (4. * np.pi)
 
+
+
+
+# This kernel computes induced velocities on GPU
 modFlts = SourceModule("""
-__global__ void inducedVelocityKernel(float *destUx, float *destUy, float *destUz, float *ptclePosX, float *ptclePosY, 
-                           float *ptclePosZ, float *fltsLeftX, float *fltsLeftY, float *fltsLeftZ,
-                           float *fltsRightX, float *fltsRightY, float *fltsRightZ, float *fltsCirculations, 
-                           float *lengthRegul, int numParticles, int numFilaments, float deltaFlts)
+__global__ void inducedVelocityKernel(float *destUx, float *destUy, 
+                      float *destUz, float *ptclePosX, float *ptclePosY, 
+                      float *ptclePosZ, float *fltsLeftX, float *fltsLeftY, 
+                      float *fltsLeftZ, float *fltsRightX, float *fltsRightY, 
+                      float *fltsRightZ, float *fltsCirculations, 
+                      float *lengthRegul, int numParticles, int numFilaments, 
+                      float deltaFlts)
 {
   //Get thread's global index
   int idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -94,7 +104,8 @@ __global__ void inducedVelocityKernel(float *destUx, float *destUy, float *destU
         //float r1tr2  = r1*r2;
         //
         // float   fd = fltsLength[k]*deltaFlts;
-        float   den  = r1*r2*(r1*r2 + pxx1*pxx2 + pyy1*pyy2 + pzz1*pzz2) + lengthRegul[k]; //fd*fd;
+        float   den  = r1*r2*(r1*r2 + pxx1*pxx2 + pyy1*pyy2 + pzz1*pzz2) + 
+                       lengthRegul[k]; //fd*fd;
         //
         float ubar = 0.;
         if(abs(den) > 1e-32){

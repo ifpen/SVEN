@@ -118,7 +118,7 @@ def write_blade_tp(blades, outDir, it):
 # Choose a wind velocity and wake parameters 
 # -----------------------------------------------------------------------------
 
-cases = ["24"]#, "15", "24"]
+cases = ["15"]#, "15", "24"]
 nearWakeLength = 3600
 innerIter  = 12
 nRotations = 15.

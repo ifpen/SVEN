@@ -7,22 +7,22 @@ class Blade:
 
     Parameters
     ----------
-    nodes : 
-        Path to .foil file with the polars definition.
-    nodeChords : int, optional
-        Length of the file header to skip (default is 0).
-    nearWakeLength : 
-        
-    airfoils : 
-        
-    centersOrientationMatrix :
-        
-    nodesOrientationMatrix :
-         
-    centersTranslationVelocity : 
-        
-    nodesTranslationVelocity :
-        
+    nodes : ndarray
+        Array representing the blade nodes.
+    nodeChords : ndarray
+        Array of chord lengths at each node.
+    nearWakeLength : int
+        Number of kept filament rows in the wake.
+    airfoils : list
+        List of Airfoil objects for each section of the blade
+    centersOrientationMatrix : ndarray
+        Orientation matrices for the centers of each blade section.
+    nodesOrientationMatrix : ndarray
+        Orientation matrices for each node.
+    centersTranslationVelocity : ndarray
+        Translation velocity at the blade section centers.
+    nodesTranslationVelocity : ndarray
+        Translation velocity at each node.
     """
     def __init__(
         self, nodes, nodeChords, nearWakeLength, airfoils, 
@@ -77,6 +77,10 @@ class Blade:
         return
 
     def initializeWake(self):
+        """
+        Initialize the wake positions by setting all wake nodes to the trailing
+        edge position.
+        """
       
         for i in range(self.nearWakeLength):
             for j in range(len(self.bladeNodes)):
@@ -84,11 +88,18 @@ class Blade:
         return
 
     def updateFilamentCirulations(self):
+        """
+        Update the circulation values for the first row of filaments in the wake.
+        """
         self.trailFilamentsCirculation[:,0] = self.gammaTrail
         self.shedFilamentsCirculation[:,0] = self.gammaShed
         return
 
     def spliceNearWake(self):
+        """
+        Shift the circulation values associated to a wake node one step downstream
+        to simulate advection.
+        """
         self.wakeNodes[:,1:] = self.wakeNodes[:,:-1]
         self.trailFilamentsCirculation[:,1:] = self.trailFilamentsCirculation[:,:-1]
         self.shedFilamentsCirculation[:, 1:] = self.shedFilamentsCirculation[:, :-1]
@@ -99,6 +110,10 @@ class Blade:
         return
 
     def advectFilaments(self, uInfty, timeStep):
+        """
+        Advect the wake nodes based on the wind velocity and induced velocities
+        using a forward Euler scheme.
+        """
 
         wind = np.zeros(3)
         wind[0] = uInfty
@@ -106,18 +121,30 @@ class Blade:
         return
 
     def storeOldGammaBound(self, gammas):
+        """
+        Stores the current value of bound circulation (circulation associated
+        to blade nodes) into a historical variable.
+        """
 
         self.oldGammaBound = gammas
 
         return
 
     def updateSheds(self, newGammaBound):
+        """
+        Updates shed filament's circulation values by calculating the difference
+        between the old and new values of bound circulation (Kelvin's Theorem).
+        """
 
         self.gammaShed = self.oldGammaBound - newGammaBound
 
         return
 
     def updateTrails(self, newGammaBound):
+        """
+        Update trail filament's circulation values based on the differences 
+        between bound circulation values of adjacent sections.
+        """
 
         ghostedNewGammaBound = np.zeros(len(newGammaBound) + 2)
         ghostedNewGammaBound[1:-1] = newGammaBound
@@ -125,7 +152,10 @@ class Blade:
         return
 
     def updateFirstWakeRow(self):
-
+        """
+        Updates the positions of the first row of wake nodes based on the trailing
+        edge coordinates of the blade. 
+        """
         for i in range(len(self.trailingEdgeNode)):
             dist_to_TE = [self.nodeChords[i] * 3. / 4., 0, 0]
             r = R.from_matrix(self.nodesOrientationMatrix[i])
@@ -137,6 +167,10 @@ class Blade:
 
 
     def estimateGammaBound(self, uInfty, nearWakeInducedVelocities):
+        """
+        Estimates bound circulation associated to each blade section based on 
+        blade-element theory and Kutta-Joukowski theorem.
+        """
 
         relax = 0.05
 
@@ -174,6 +208,10 @@ class Blade:
         return newGammaBounds
 
     def getNodesAndCirculations(self, includeBoundFilaments):
+        """
+        Retrieves the coordinates of left and right nodes of each vortex filament
+        along with the associated circulations.
+        """
 
         length = len(self.bladeNodes) + len(self.centers)
         if(includeBoundFilaments == True):
@@ -201,58 +239,3 @@ class Blade:
 
         return leftNodes, rightNodes, circulations
 
-    def getFilamentsInfo(self, uInftyX, tStep):
-        leftNodes = []
-        rightNodes = []
-        circulations = []
-
-        includeShed = True
-
-        uInfty = np.zeros(3)
-        uInfty[0] = uInftyX
-
-        # Trail filaments first
-        for i in range(len(self.bladeNodes)):
-            leftNodes.append(self.trailingEdgeNode[i])
-            rightNodes.append(self.trailingEdgeNode[i] + (
-                    uInfty - self.prevNodesTranslationVelocity[i] + 
-                    self.inductionsAtNodes[i]) * tStep)
-            circulations.append(self.gammaTrail[i])
-
-        # Then shed filaments
-        if (includeShed):
-            for i in range(len(self.centers)):
-                leftNodes.append(self.trailingEdgeNode[i] + (
-                        uInfty - self.prevNodesTranslationVelocity[i] + 
-                        self.inductionsAtNodes[i]) * tStep)
-                rightNodes.append(self.trailingEdgeNode[i + 1] + (
-                        uInfty - self.prevNodesTranslationVelocity[i + 1] + 
-                        self.inductionsAtNodes[i+1]) * tStep)
-                circulations.append(self.gammaShed[i])
-
-        leftNodes = np.asarray(leftNodes)
-        rightNodes = np.asarray(rightNodes)
-        circulations = np.asarray(circulations)
-
-        return leftNodes, rightNodes, circulations
-
-    def getLastFilamentsInfo(self, uInftyX, tStep):
-
-        leftNodes = self.wakeNodes[:,-2]
-        rightNodes = self.wakeNodes[:,-1]
-        circs = self.trailFilamentsCirculation[:,-1]
-        circulations = []
-        for c in circs:
-            circulations.append(c)
-
-        leftNodes = np.concatenate((leftNodes, self.wakeNodes[:-1,-1]), axis=0)
-        rightNodes = np.concatenate((rightNodes, self.wakeNodes[1:,-1]), axis=0)
-        circs = self.shedFilamentsCirculation[:,-1]
-        for c in circs:
-            circulations.append(c)
-
-        circulations = np.asarray(circulations)
-        self.shedFilamentsCirculation[:, -1] = 0.
-        self.trailFilamentsCirculation[:, -1] = 0.
-
-        return leftNodes, rightNodes, circulations

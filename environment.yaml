@@ -1,0 +1,13 @@
+name : sven
+channels: 
+  - conda-forge
+  - defaults
+
+dependencies: 
+  - python=3.12.2
+  - numpy
+  - scipy 
+  - matplotlib
+  - numba 
+  - pycuda
+  - cudatoolkit=11.8.0

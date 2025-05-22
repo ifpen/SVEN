@@ -4,10 +4,27 @@ import matplotlib.pyplot as plt
 import glob
 import os
 
+
+
+# -------------------------
+# Ask the user for wind speed
+# -------------------------
+while True:
+    try:
+        wind_speed = int(input("Please enter the wind speed for CASTOR data"
+        " (choose between 10, 15, or 24): "))
+        if wind_speed not in [10, 15, 24]:
+            raise ValueError("Invalid wind speed. Please choose between 10, " \
+            "15, or 24.")
+        break
+    except ValueError as e:
+        print(e)
+
 # -------------------------
 # Choose a wind speed
 # -------------------------
-wind_speed = 24  # choose between 10, 15, ou 24
+# wind_speed = 15  # choose between 10, 15, ou 24
+
 case_str = str(wind_speed)
 
 scale = 0.8
@@ -62,7 +79,8 @@ ax[1].set_xlabel('Blade centers [m]')
 ax[1].set_ylabel('Ft [N/m]')
 
 # Légende globale
-f.legend(['CASTOR', 'SVEN'], loc='upper center', ncol=2, frameon=True, bbox_to_anchor=(0.55, 1.01))
+f.legend(['CASTOR', 'SVEN'], loc='upper center', ncol=2, frameon=True, 
+         bbox_to_anchor=(0.55, 1.01))
 plt.tight_layout()
 plt.subplots_adjust(top=0.85)
 
@@ -98,7 +116,9 @@ def update_sven_plot(event=None):
 # -------------------------
 # Connexion événement clavier
 # -------------------------
-f.canvas.mpl_connect('key_press_event', lambda event: update_sven_plot(event) if event.key == 'u' else None)
+f.canvas.mpl_connect('key_press_event', 
+                     lambda event: update_sven_plot(event) if event.key == 'u' 
+                     else None)
 
 # -------------------------
 # Mise à jour initiale
