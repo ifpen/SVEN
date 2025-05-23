@@ -11,7 +11,7 @@ This code is designed to enable the exploration and testing of different models 
 
 # How to use it
 
-
+To be completed.
 
 # Implemented models
 
@@ -21,7 +21,7 @@ This code implements a vortex-based aerodynamic model using a lifting-line formu
 
 The implementation follows the principles of the Free Vortex Wake method, using the Biot–Savart law and the Kutta–Joukowski theorem to resolve induced velocities and aerodynamic forces.
 
-More information on the implemented models can be found in [Le Guern's Thesi](https://theses.fr/2024BORD0313).
+More information on the implemented models can be found in [Le Guern's Thesis](https://theses.fr/2024BORD0313).
 
 
 
