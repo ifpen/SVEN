@@ -126,7 +126,7 @@ DegreesPerTimeStep = 10.
 
 # Choose if you want post process files to be written 
 
-wakePostProcess = False
+wakePostProcess = True
 forcesPostProcess = True
 
 

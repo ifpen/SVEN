@@ -1,5 +1,12 @@
 import os
 import matplotlib.pyplot as plt
+import sys
+
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_dir = os.path.dirname(script_dir)
+parent_of_project_dir = os.path.dirname(project_dir)
+sys.path.append(parent_of_project_dir)
 
 from sven.airfoil import *
 from sven.blade import *
@@ -314,7 +321,7 @@ for input in inputs:
     iterationVect = []
     startTime = time.time()
     for (it, t) in enumerate(timeSteps):
-
+        print('iteration, time, finaltime: ', it, t, timeSteps[-1])
         updateWing(Blades, distribution, it, time, np.radians(azimuth), rotationSpeed)
 
         timeSimulation += timeStep
