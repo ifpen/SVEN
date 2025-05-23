@@ -17,6 +17,12 @@ This code is designed to enable the exploration and testing of different models 
 
 
 
+This code implements a vortex-based aerodynamic model using a lifting-line formulation with a filament-discretized free wake. It computes bound circulation along the blade and tracks shed and trailing filaments to capture unsteady aerodynamic effects.
+
+The implementation follows the principles of the Free Vortex Wake method, using the Biot–Savart law and the Kutta–Joukowski theorem to resolve induced velocities and aerodynamic forces.
+
+More information on the implemented models can be found in [Le Guern's Thesi](https://theses.fr/2024BORD0313).
+
 
 
 
@@ -29,6 +35,7 @@ This library requires CUDA for GPU acceleration. To set up CUDA:
 
 - Download and install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) from NVIDIA.
 - Ensure the installed version matches the one specified in `environment.yaml` (e.g., `11.8.0`).
+
 
 **2. Prepare the environment**
 
