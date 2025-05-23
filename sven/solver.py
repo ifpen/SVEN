@@ -31,8 +31,6 @@ def update(
     if (nearWakeLength > 2):
         wakeFilamentsInductionsOnBladeOrWake(blades, deltaFlts, "blade")
 
-    t1 = time.time()
-    print('wakeInductionsOnBlade: ', t1 - t0)
 
     ###########################################################################
     # These have to be set back to zero before gamma bound convergence loop
@@ -40,8 +38,6 @@ def update(
     blade.gammaShed = np.zeros_like(blade.gammaShed)
     blade.gammaTrail = np.zeros_like(blade.gammaTrail)
    
-    t0 = time.time()
-    biotTime = 0
 
     ###########################################################################
     # Convergence loop over gammaBound
@@ -64,8 +60,6 @@ def update(
         #                                 compute from Kelvin's theorem.
         #######################################################################
         nearWakeInducedVelocities = nearWakeInduction(blades, deltaFlts)
-        tb1 = time.time()
-        biotTime += tb1 - tb0
 
         iBlade = 0
         for (blade, bladeInducedVelocities) in zip(blades, nearWakeInducedVelocities):
@@ -82,8 +76,6 @@ def update(
     for (iBlade, blade) in enumerate(blades):
         blade.storeOldGammaBound(bladesGammaBounds[iBlade])
 
-    t1 = time.time()
-    print('gammaBoundUpdate: ', t1 - t0, biotTime)
 
     ###########################################################################
     # Compute all inductions on wake elements : 
@@ -96,26 +88,19 @@ def update(
     if (nearWakeLength > 2):
         wakeFilamentsInductionsOnBladeOrWake(blades, deltaFlts, "wake")
 
-    t1 = time.time()
-    print('wakeOnWake: ', t1 - t0)
 
-    t0 = time.time()
     bladeInductionsOnWake(blades, deltaFlts)
     
-    t1 = time.time()
-    print('bladeOnWake: ', t1 - t0)
 
     ###########################################################################
     # Once all inductions are known, the induced wake velocity is used to 
     # advect vortex filaments in the wake.
     ###########################################################################
-    t0 = time.time()
 
     if (nearWakeLength > 2):
         for blade in blades:
             blade.advectFilaments(uInfty, timeStep)
-    t1 = time.time()
-    print('advection: ', t1 - t0)
+   
 
     ###########################################################################
     #(1)"spliceNearWake"            : trail and shed filaments from the 
@@ -132,7 +117,6 @@ def update(
             blade.spliceNearWake()
             blade.updateFilamentCirulations()
 
-    print('Full iteration time: ', time.time() - iterationTime)
     iterationVect.append([time.time() - iterationTime, time.time()-startTime])
 
     return

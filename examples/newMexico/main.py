@@ -121,7 +121,7 @@ def write_blade_tp(blades, outDir, it):
 cases = ["15"]#, "15", "24"]
 nearWakeLength = 3600
 innerIter  = 12
-nRotations = 15.
+nRotations = 10.
 DegreesPerTimeStep = 10.
 
 # Choose if you want post process files to be written 
