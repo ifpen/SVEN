@@ -23,11 +23,43 @@ This code is designed to enable the exploration and testing of different models 
 
 # Dependencies 
 
+**1. Install CUDA Toolkit** 
 
+This library requires CUDA for GPU acceleration. To set up CUDA: 
 
+- Download and install the [CUDA Toolkit](https://developer.nvidia.com/cuda-downloads) from NVIDIA.
+- Ensure the installed version matches the one specified in `environment.yaml` (e.g., `11.8.0`).
+
+**2. Prepare the environment**
+
+Run the following command to create the Conda environment:
+
+```bash
+conda env create -f environment.yaml
+```
+
+**3. Set up environment variables for CUDA**
+
+After installing CUDA, add it to your system's path. Append the following lines to your shell configuration file (e.g.,~/.bashrc):
+
+```bash
+export PATH=/usr/local/cuda/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+```
+Then reload your shell: 
+
+```bash
+source ~/.bashrc
+```
+
+**4. Activate the environment**
+
+```bash
+conda activate sven
+```
 
 # Authors 
 
-Caroline Le Guern, Frédéric Blondel @ IFP Energies nouvelles
+Caroline Le Guern, Frédéric Blondel [@ IFP Energies nouvelles](https://www.ifpenergiesnouvelles.com)
 
 
