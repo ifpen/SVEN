@@ -65,42 +65,6 @@ def write_blade_tp(blades, outDir, it):
         output.close()
     return
 
-def writeHubAndTower():
-    xBase = +10.
-    radius = 2.5
-    z = [-120., 0.]
-
-    thetas = np.linspace(0., 2. * np.pi, 30)
-    x = radius * np.cos(thetas) + xBase
-    y = radius * np.sin(thetas)
-
-    out = open('outputs/cylinderTower.tp', 'w')
-    out.write('TITLE="Near-wake nodes"\n')
-    out.write('VARIABLES="X" "Y" "Z"\n')
-    out.write('ZONE T="Near-wake" I=30 J=1, K=2, DT=(SINGLE SINGLE SINGLE)\n')
-    for zi in z:
-        for (yi, xi) in zip(y, x):
-            out.write(str(xi) + ' ' + str(yi) + ' ' + str(zi) + '\n')
-    out.close()
-
-    xBase = +0.
-    radius = 3.5
-    z = [-0.25, 10. + radius]
-    thetas = np.linspace(0., 2. * np.pi, 30)
-    x = radius * np.cos(thetas) + xBase
-    y = radius * np.sin(thetas)
-
-    out = open('outputs/cylinderHub.tp', 'w')
-    out.write('TITLE="Near-wake nodes"\n')
-    out.write('VARIABLES="X" "Y" "Z"\n')
-    out.write('ZONE T="Near-wake" I=2 J=30, K=30, DT=(SINGLE SINGLE SINGLE)\n')
-    for zi in z:
-        # Not the way it is supposed to be but works
-        for (yi, xi) in zip(y, x):
-            out.write(str(zi) + ' ' + str(xi) + ' ' + str(yi) + '\n')
-            out.write(str(zi) + ' ' + str(xBase) + ' ' + str(yi) + '\n')
-    out.close()
-    return
 
 def CosineNodesDistribution(nPoints):
     xis = np.linspace(-np.pi, 0., nPoints + 1)
@@ -301,7 +265,6 @@ for input in inputs:
     
     # Pre-processing
     rotationRPM = TSR * windVelocity / rotorRadius * 30. / np.pi
-    #itersPerTour = 144.
     azimuthStep = 5.0
     itersPerTour = 360./azimuthStep
     rotationSpeed = rotationRPM * np.pi / 30.
@@ -330,9 +293,6 @@ for input in inputs:
                 
         postProcess = True
         if (postProcess):
-            if (it == 0):
-                writeHubAndTower()
-
             write_blade_tp(Blades, outDir, it)
             write_filaments_tp(Blades, outDir, it)
 
