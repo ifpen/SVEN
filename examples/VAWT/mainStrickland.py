@@ -66,35 +66,45 @@ def write_blade_tp(blades, outDir, it):
     return
 
 
+# -----------------------------------------------------------------------------
+# Geometry definition
+# -----------------------------------------------------------------------------
+
+
 def CosineNodesDistribution(nPoints):
     xis = np.linspace(-np.pi, 0., nPoints + 1)
     return .5 * (np.cos(xis) + 1.)
 
 
-def VAWT_rotor(bladePitch, distribution, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity, nearWakeLength):
-
+def VAWT_rotor(
+    bladePitch, distribution, bladeLength, rotorRadius, rotationSpeed,
+    nBlades, windVelocity, nearWakeLength
+):
     # Blade discretisation
-    nBladeCenters  = 50
+    nBladeCenters = 50
 
     # Blade chord
     nodeChords = np.ones(nBladeCenters + 1) * 0.0914
 
-    airfoils = []
-    for i in range(nBladeCenters):
-        airfoils.append(Airfoil('./geometry/stricklandAirfoil.foil'))
+    airfoils = [Airfoil('./geometry/stricklandAirfoil.foil')
+                for _ in range(nBladeCenters)]
 
     # Multiple straight wings
     initialNodes = np.zeros([nBladeCenters + 1, 3])
     if distribution == "linear":
-        initialNodes[:, 2] = (np.linspace(0., 1., nBladeCenters + 1) - 0.5) * bladeLength
+        initialNodes[:, 2] = (
+            np.linspace(0.0, 1.0, nBladeCenters + 1) - 0.5
+        ) * bladeLength
     else:
-        initialNodes[:, 2] = np.asarray((CosineNodesDistribution(nBladeCenters) - 0.5) * bladeLength)
+        initialNodes[:, 2] = (
+            np.asarray(CosineNodesDistribution(nBladeCenters) - 0.5)
+            * bladeLength
+        )
     initialNodes[:, 1] = rotorRadius
 
     Blades = []
-    dAz = 2. * np.pi / nBlades
+    dAz = 2.0 * np.pi / nBlades
     for ib in range(nBlades):
-
         azimuth = ib * dAz
 
         nodes = np.copy(initialNodes)
@@ -106,10 +116,10 @@ def VAWT_rotor(bladePitch, distribution, bladeLength, rotorRadius, rotationSpeed
             nodes[i, 0] = x * np.cos(azimuth) - y * np.sin(azimuth)
             nodes[i, 1] = x * np.sin(azimuth) + y * np.cos(azimuth)
 
-        bladePitch = 0.
+        bladePitch = 0.0
         centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
         for i in range(len(nodes) - 1):
-            r1 = R.from_euler('x', 90., degrees=True)
+            r1 = R.from_euler('x', 90.0, degrees=True)
             r2 = R.from_euler('y', bladePitch + azimuth, degrees=True)
             R1 = r1.as_matrix()
             R2 = r2.as_matrix()
@@ -118,77 +128,84 @@ def VAWT_rotor(bladePitch, distribution, bladeLength, rotorRadius, rotationSpeed
 
         nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
         for i in range(len(nodes)):
-            r1 = R.from_euler('x', 90., degrees=True)
+            r1 = R.from_euler('x', 90.0, degrees=True)
             r2 = R.from_euler('y', bladePitch + azimuth, degrees=True)
             R1 = r1.as_matrix()
             R2 = r2.as_matrix()
             nodesOrientationMatrix[i] = np.dot(R1, R2)
 
-        liftingLine = Blade(nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix,
-                            nodesOrientationMatrix,
-                            np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3]))
+        liftingLine = Blade(
+            nodes, nodeChords, nearWakeLength, airfoils, centersOrientationMatrix,
+            nodesOrientationMatrix,
+            np.zeros([len(nodes) - 1, 3]), np.zeros([len(nodes), 3])
+        )
         liftingLine.updateFirstWakeRow()
         liftingLine.initializeWake()
 
         Blades.append(liftingLine)
 
-    updateWing(Blades, distribution, 0, 0, 0., rotationSpeed)
+    updateWing(Blades, distribution, 0, 0, 0.0, rotationSpeed)
 
     deltaFlts = 1e-1
 
-    print('Solidity: ', nBlades * nodeChords[0] / 2. / rotorRadius)
+    print('Solidity: ', nBlades * nodeChords[0] / 2.0 / rotorRadius)
     print('TSR     : ', rotationSpeed * rotorRadius / windVelocity)
 
     return Blades, deltaFlts
 
+# -----------------------------------------------------------------------------
+# Function to update the wing geometry and orientation at each time step
+# -----------------------------------------------------------------------------
 
-def updateWing(Blades, distribution, iteration, time, azimuth, rotationSpeed):
-    #
+def updateWing(
+    Blades, distribution, iteration, time, azimuth, rotationSpeed
+):
     nBlades = len(Blades)
-    #
     n0 = Blades[0].bladeNodes[0]
     nE = Blades[0].bladeNodes[-1]
     bladeLength = nE[2] - n0[2]
-    #
-    n0[2] = 0.
+    n0[2] = 0.0
     rotorRadius = np.linalg.norm(n0)
-    #
     elementVelocity = np.zeros(3)
-    elementVelocity[0] = - rotationSpeed * rotorRadius
+    elementVelocity[0] = -rotationSpeed * rotorRadius
 
     for (ib, blade) in enumerate(Blades):
-
-        dAz = ib * 2. * np.pi / nBlades
-
-        # Multiple straight wings
+        dAz = ib * 2.0 * np.pi / nBlades
         nCenters = len(blade.centers)
         nodes = np.zeros([nCenters + 1, 3])
 
-        # z positions do not change
         if distribution == "linear":
-            nodes[:, 2] = (np.linspace(0., 1., nCenters + 1) - 0.5) * bladeLength
+            nodes[:, 2] = (
+                np.linspace(0.0, 1.0, nCenters + 1) - 0.5
+            ) * bladeLength
         else:
-            nodes[:, 2] = np.asarray((CosineNodesDistribution(nCenters) - 0.5) * bladeLength)
+            nodes[:, 2] = (
+                np.asarray(
+                    CosineNodesDistribution(nCenters) - 0.5
+                ) * bladeLength
+            )
 
-        # initial positions:
         nodes[:, 1] = rotorRadius
-        nodes[:, 0] = 0.
-        # Rotate them with the azimuth
+        nodes[:, 0] = 0.0
+
         for i in range(len(nodes[:, 0])):
             x = nodes[i, 0]
             y = nodes[i, 1]
-
-            nodes[i, 0] = x * np.cos(azimuth + dAz) - y * np.sin(azimuth + dAz)
-            nodes[i, 1] = x * np.sin(azimuth + dAz) + y * np.cos(azimuth + dAz)
+            nodes[i, 0] = (
+                x * np.cos(azimuth + dAz) - y * np.sin(azimuth + dAz)
+            )
+            nodes[i, 1] = (
+                x * np.sin(azimuth + dAz) + y * np.cos(azimuth + dAz)
+            )
 
         Blades[ib].bladeNodes = nodes
-        Blades[ib].centers = .5 * (nodes[1:] + nodes[:-1])
+        Blades[ib].centers = 0.5 * (nodes[1:] + nodes[:-1])
 
-        # Update orientation matrices and velocities
         centersOrientationMatrix = np.zeros([len(nodes) - 1, 3, 3])
         centersVelocities = np.zeros([len(nodes) - 1, 3])
+
         for i in range(len(nodes) - 1):
-            r1 = R.from_euler('x', 90., degrees=True)
+            r1 = R.from_euler('x', 90.0, degrees=True)
             r2 = R.from_euler('y', np.degrees(azimuth + dAz), degrees=True)
             R1 = r1.as_matrix()
             R2 = r2.as_matrix()
@@ -196,13 +213,15 @@ def updateWing(Blades, distribution, iteration, time, azimuth, rotationSpeed):
 
             r = R.from_matrix(centersOrientationMatrix[i])
             centersVelocities[i, :] = r.apply(elementVelocity, inverse=False)
+
         Blades[ib].centersOrientationMatrix = centersOrientationMatrix
         Blades[ib].centersTranslationVelocity = centersVelocities
 
         nodesOrientationMatrix = np.zeros([len(nodes), 3, 3])
         nodesVelocities = np.zeros([len(nodes), 3])
+
         for i in range(len(nodes)):
-            r1 = R.from_euler('x', 90., degrees=True)
+            r1 = R.from_euler('x', 90.0, degrees=True)
             r2 = R.from_euler('y', np.degrees(azimuth + dAz), degrees=True)
             R1 = r1.as_matrix()
             R2 = r2.as_matrix()
@@ -210,10 +229,15 @@ def updateWing(Blades, distribution, iteration, time, azimuth, rotationSpeed):
 
             r = R.from_matrix(nodesOrientationMatrix[i])
             nodesVelocities[i, :] = r.apply(elementVelocity, inverse=False)
+
         Blades[ib].nodesOrientationMatrix = nodesOrientationMatrix
         Blades[ib].nodesTranslationVelocities = nodesVelocities
 
     return
+
+# -----------------------------------------------------------------------------
+# Loop through all input configurations - pre-processing data definition
+# -----------------------------------------------------------------------------
 
 inputs = [
  #{'nBlades':1, 'TSR':2.5},
@@ -274,7 +298,9 @@ for input in inputs:
     innerIter = 10
     timeSteps = np.arange(0., timeEnd, timeStep)
 
-    Blades, deltaFlts = VAWT_rotor(bladePitch, distribution, bladeLength, rotorRadius, rotationSpeed, nBlades, windVelocity, len(timeSteps))
+    Blades, deltaFlts = VAWT_rotor(
+        bladePitch, distribution, bladeLength, rotorRadius, 
+        rotationSpeed, nBlades, windVelocity, len(timeSteps))
 
     timeSimulation = 0.
     azimuth = 0.
@@ -283,13 +309,19 @@ for input in inputs:
     midBladeCn = []
     iterationVect = []
     startTime = time.time()
+
+# -----------------------------------------------------------------------------
+# Main simulation loop
+# -----------------------------------------------------------------------------
+
     for (it, t) in enumerate(timeSteps):
         print('iteration, time, finaltime: ', it, t, timeSteps[-1])
         updateWing(Blades, distribution, it, time, np.radians(azimuth), rotationSpeed)
 
         timeSimulation += timeStep
 
-        update(Blades, windVelocity, timeStep, timeSimulation, innerIter, deltaFlts, startTime, iterationVect)
+        update(Blades, windVelocity, timeStep, timeSimulation, 
+               innerIter, deltaFlts, startTime, iterationVect)
                 
         postProcess = True
         if (postProcess):
@@ -309,6 +341,10 @@ for input in inputs:
         azimuth += azimuthStep
     print('Total simulation time: ', time.time() - startTime)
 
+# -----------------------------------------------------------------------------
+# Generate and save plots
+# -----------------------------------------------------------------------------
+
     plt.cla()
     plt.close()
     plt.plot(np.degrees(azims), midBladeCn, 'o-', label='SVEN')
@@ -316,8 +352,8 @@ for input in inputs:
     ref[:,0] = ref[:,0] % 360.
     plt.plot(ref[:,0], -ref[:,1], 'o', label='Expe')
     plt.legend()
-    plt.xlabel('Azimuth angle (o)')
-    plt.ylabel(r'$Cn^*$ force coefficient (-)')
+    plt.xlabel('Azimuth angle [o]')
+    plt.ylabel(r'$Cn^*$ force coefficient [-]')
     plt.tight_layout()
     plt.grid()
     plt.savefig('cnEvolution_Nb'+str(input['nBlades'])+'_TSR'+str(input['TSR'])+'.png', format='png', dpi=200)
