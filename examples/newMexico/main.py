@@ -118,12 +118,14 @@ def write_blade_tp(blades, outDir, it):
 # Choose a wind velocity and wake parameters 
 # -----------------------------------------------------------------------------
 
-cases = ["15"]#, "15", "24"]
+cases = ["15"]#, "10", "24"] # wind velocity
 
-nearWakeLength = 3600
-innerIter  = 12
-nRotations = 10.
-DegreesPerTimeStep = 10.
+nRotations = 10. # Number of rotations
+DegreesPerTimeStep = 10. # Azimuthal step
+rotationsKeptInWake = 10. # Equivalent number of rotations kept for wake length  
+nearWakeLength = 360*rotationsKeptInWake # Wake length
+innerIter  = 12 # Iterations for GammaBound convergence loop
+
 
 # Choose if you want post process files to be written 
 

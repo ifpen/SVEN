@@ -124,7 +124,7 @@ Blades = Wing(bladePitch, nBladeCenters, AR, bladeLength, nearWakeLength)
 # Time loop parameters
 timeStep = 0.1
 timeEnd = nearWakeLength * timeStep
-innerIter = 10
+innerIter = 10 # Iterations for GammaBound convergence loop
 timeSteps = np.arange(0., timeEnd, timeStep)
 timeSimulation = 0.
 iterationVect = []
