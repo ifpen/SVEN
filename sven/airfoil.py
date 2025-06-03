@@ -1,5 +1,6 @@
 import numpy as np
 from numba import jit, njit
+import os
 
 
 
@@ -16,12 +17,20 @@ class Airfoil:
 
     def __init__(self, dataFile, headerLength=0):
 
+        try:
+            airfoilData = np.genfromtxt(dataFile, skip_header=headerLength)
+        except OSError as e:
+            cwd = os.getcwd()
+            raise FileNotFoundError(
+                f"Could not find airfoil data file '{dataFile}'.\n"
+                f"Current working directory: {cwd}\n"
+                f"Please update the path to your data file."
+            ) from e
 
-        airfoilData = np.genfromtxt(dataFile, skip_header=headerLength)
         sortedIndices = np.argsort(airfoilData[:, 0])
         self.AOAs = np.radians(airfoilData[sortedIndices, 0])
-        self.Lifts = airfoilData[sortedIndices,1]
-        self.Drags = airfoilData[sortedIndices,2]
+        self.Lifts = airfoilData[sortedIndices, 1]
+        self.Drags = airfoilData[sortedIndices, 2]
 
     def getLift(self, aoa):
         """

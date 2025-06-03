@@ -124,7 +124,7 @@ nRotations = 10. # Number of rotations
 DegreesPerTimeStep = 10. # Azimuthal step
 rotationsKeptInWake = 10. # Equivalent number of rotations kept for wake length  
 nearWakeLength = 360*rotationsKeptInWake # Wake length
-innerIter  = 12 # Iterations for GammaBound convergence loop
+innerIter  = 12 # Iterations for GammaBound convergence
 
 
 # Choose if you want post process files to be written 

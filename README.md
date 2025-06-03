@@ -9,9 +9,7 @@ The objective of this project is to provide a simple and modular implementation 
 
 This code is designed to enable the exploration and testing of different models and aspects of the method, without aiming to offer a complete or highly optimized implementation. The emphasis is on flexibility and ease of adaptation to meet the specific needs of users, whether they are researchers, engineers, or students.
 
-<!-- # How to use it
 
-To be completed. -->
 
 # Implemented models
 
@@ -64,6 +62,29 @@ source ~/.bashrc
 ```bash
 conda activate sven
 ```
+
+# Installation and run
+
+**1. Clone the project** 
+
+```bash
+git clone
+```
+**2. Set up the project**
+
+```bash
+python -m pip install -e ./
+```
+**3. Run an example**
+
+ If you're running a script from outside its example folder, update any relative paths to geometry files (e.g., ./geometry/flatPlate.foil) if they are not resolving.
+
+```bash
+python main.py
+```
+
+
+
 
 # Authors 
 
