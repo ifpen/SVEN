@@ -9,9 +9,9 @@ The objective of this project is to provide a simple and modular implementation 
 
 This code is designed to enable the exploration and testing of different models and aspects of the method, without aiming to offer a complete or highly optimized implementation. The emphasis is on flexibility and ease of adaptation to meet the specific needs of users, whether they are researchers, engineers, or students.
 
-# How to use it
+<!-- # How to use it
 
-To be completed.
+To be completed. -->
 
 # Implemented models
 
