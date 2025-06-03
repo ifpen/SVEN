@@ -138,7 +138,7 @@ for it, t in enumerate(timeSteps):
         innerIter, deltaFlts, startTime, iterationVect
     )
 
-    # Write post processing files (deactivated by default)
+    # Write post processing files (activated by default)
     postProcess = True
     if postProcess:
         write_blade_tp(Blades, outDir, it)

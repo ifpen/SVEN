@@ -119,6 +119,7 @@ def write_blade_tp(blades, outDir, it):
 # -----------------------------------------------------------------------------
 
 cases = ["15"]#, "15", "24"]
+
 nearWakeLength = 3600
 innerIter  = 12
 nRotations = 10.
