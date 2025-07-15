@@ -17,5 +17,5 @@ No strict style guide is imposed, but it is recommended to follow the existing s
 
 Contributions are welcome in all aspects. If you are looking for inspiration, here are some potential directions which could benefit the code :
 
-- Rigid body handling : The 'updateTurbine()' function is not generic and doesn't support yaw, tilt, precone or other typical rotor configurations. Making it more flexible would be a valuable improvement.
-- Aerolastic coupling : The code could benefit from coupling with a structural solvr to enable aeroelastic simulations.
+- Rigid body handling : The `updateTurbine()` function is not generic and doesn't support yaw, tilt, precone or other typical rotor configurations. Making it more flexible would be a valuable improvement.
+- Aerolastic coupling : The code could benefit from coupling with a structural solver to enable aeroelastic simulations.
