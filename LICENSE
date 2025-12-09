@@ -1,1 +1,184 @@
-TO BE DEFINED
+                                       LICENCE
+                                    SOFTWARE SVEN
+
+DEFINITIONS:
+
+SOFTWARE: means SVEN in source code and the associated documentation
+(hereafter the “DOCUMENTATION”)
+
+MODIFIED VERSION” means the SOFTWARE modified by the LICENSEE.
+
+USE (or USED): means the use of the SOFTWARE or the MODIFIED VERSION for public
+and private research or development, applied or not, for public assessment as
+well as for implementation of an internal activity of the LICENSEE.
+The use here above authorized can be only without a direct profit
+or direct profit-making purpose.
+
+SERVICE: means services provided by IFPEN concerning the SOFTWARE
+such as corrective maintenance, upgrading etc.
+
+ENTRY INTO FORCE: means the date a copy of the SOFTWARE is downloaded by the LICENSEE.
+
+  1. PURPOSE -- The purpose of the LICENCE is to define the conditions under
+     which IFPEN grants the LICENSEE, who accepts, a non-exclusive right
+     to USE the SOFTWARE for the term of the CONTRACT.
+  
+  2. DELIVERY – PRICE -- The SOFTWARE is provided free of charge and AS IS by
+     IFPEN through the following communication channel: xxxAdresseGitIFPENxx.
+     Instructions for installation is provided in the DOCUMENTATION.
+  
+  3. RIGHTS GRANTED TO THE LICENSEE -- IFPEN grants to the LICENSEE the rights: 
+    - to reproduce, represent and operate the SOFTWARE for the USE by loading,
+      displaying, running, transmitting, or storing the SOFTWARE in the sole
+      digital form in whole or in part 
+    - to modify the source code of the SOFTWARE for the USE to create a
+      MODIFIED VERSION 
+    - the right to USE the MODIFIED VERSION 
+  
+  4. COMMUNICATION AND USE OF THE MODIFIED VERSION by IFPEN
+     The LICENSEE hereby accepts when downloading the SOFTWARE to grant IFPEN the
+     right to USE the MODIFIED VERSION and all the rights mentioned in
+     APPENDIX A of this LICENCE. The LICENSEE guarantees that it has the power
+     to assign all the intellectual property rights over the
+     MODIFIED VERSION to IFPEN.
+
+  5. SERVICES -- No SERVICES are provided by IFPEN under this LICENCE.
+  
+  6. INFRINGMENT -- The rights defined in article 1 to 4 are the only rights
+     granted to the LICENSEE. Any use of the SOFTWARE or the MODIFIED VERSION
+     that is not authorized by the LICENCE shall be considered as an infringement
+     or a contractual breach on the basis of which IFPEN may validly initiate
+     legal proceedings against the LICENSEE.
+  
+  7. NO WARRANTY -- THE LICENSEE ACKNOWLEDGES BEING INFORMED THAT NO SPECIFIC
+     FREEDOM TO OPERATE HAS BEEN GRANTED FOR THE SOFTWARE LICENSED, ENSURING
+     ITS FREE USE/EXPLOITATION FOR A SPECIFIC PURPOSE OR IN A SPECIFIC TERRITORY.
+     THE LICENSEE ALSO ACKNOWLEDGES AND ACCEPTS THAT THE USE AND EXPLOITATION OF
+     THE SOFTWARE OR MODIFIED VERSION IS AT ITS SOLE RISK. THE SOFTWARE IS
+     PROVIDED "AS IS," AND THE LICENSEE ACCEPTS THAT SAID SOFTWARE MAY CONTAIN
+     DEFECTS AND/OR OPERATIONAL OR EVEN DESIGN FAILURES. CONSEQUENTLY, IN THE
+     EVENT OF A CLAIM OR LEGAL ACTION INITIATED AGAINST THE LICENCEE BY A THIRD
+     PARTY DUE TO ANY USE OF THE SOFTWARE MADE BY LICENSEE, THE LICENSEE SHALL
+     NOT BE ENTITLED TO ANY INDEMNITY, COMPENSATION, OR OTHER FORM OF DAMAGES
+     FROM IFPEN. THE LICENSEE SHALL ASSUME THE WHOLE RESPONSIBILITY FOR THE USE
+     OF THE SOFTWARE OR MODIFIED VERSION AND SHALL HOLD IFPEN HARMLESS AGAINST
+     ALL CONSEQUENCES THAT MAY ARISE FOR THE LICENSEE, WHETHER IN TERMS OF
+     CONTRACTUAL OR TORT LIABILITY, EXCEPT IN THE CASE OF PROVEN GROSS
+     NEGLIGENCE OR WILLFUL MISCONDUCT ATTRIBUTABLE TO IFPEN.
+  
+  8. DURATION AND TRANSFER -- The LICENCE is valid from the ENTRY INTO FORCE
+     for the duration of protection of the author rights attached to the SOFTWARE
+     and MODIFIED VERSION. This LICENCE may be revoked at any time by IFPEN in
+     case of non-compliance by the LICENSEE to this LICENCE. The termination
+     or expiry of the LICENCE for any reason shall not affect the provisions
+     of the LICENCE intended to produce effects upon termination or expiry.
+     IFPEN is allowed to transfer the LICENCE to any third party.
+  
+  9. COMMUNICATION -- Any communication and/or publication by the LICENSEE of
+     work carried out using the SOFTWARE or a MODIFIED VERSION shall mention
+     that IFPEN or another licensee who obtained a legal copy of the SOFTWARE,
+     made or developed the said software with the following notice:
+     Date/version/name of the software developed by IFPEN under License
+     (link to the license)
+  
+  10. NORMAL USE -- This LICENCE shall not be interpreted as making it possible
+     to interfere with the normal exploitation of the SOFTWARE or
+     MODIFIED VERSION by IFPEN or any other licensed third party or to cause
+     unreasonable harm to IFPEN’S legitimate interests. In particular,
+     the LICENSEE may not use the SOFTWARE or the MODIFIED VERSION to develop,
+     produce and market a software, database, or creation the expression of
+     which is substantially similar to the SOFTWARE or the MODFIED VERSION or for
+     any other act that breaches IFPEN’s authors’ rights or the provisions
+     of this LICENCE.
+  
+  11. APPLICABLE LAW AND JURISDICTION -- This Contract is governed by French law. 
+     Any dispute related to the interpretation, performance, or validity of
+     this CONTRACT, shall be resolved first by an amicable procedure.
+     If the PARTIES reach an agreement, it shall be acted in writing,
+     signed by each PARTY. The conciliation shall be written in English.
+     The PARTIES agree to request to the competent judge the approval of the
+     agreement to confer it a binding force.
+     In case of non-resolution within a period of two (2) months,
+     the Judicial Court (Tribunal Judiciaire) of PARIS shall have jurisdiction.
+
+
+APPENDIX A: Assignment of the MODIFIED VERSION
+ 
+ARTICLE 1. PURPOSE OF ASSIGNMENT
+
+The LICENSEE shall assign to IFPEN, which accepts, without consideration
+and as and when they are created, all its intellectual property rights over
+the MODIFIED VERSION, on an exclusive basis, in all countries, for the legal
+duration of protection of intellectual property rights under national and
+international regulations, for all existing and future formats or existing or
+future media (including paper, computer, magnetic media, optical media, video,
+digital media, online data processing or electronic), whatever the destination,
+in as many copies as IFPEN deems necessary, and for all uses and needs of IFPEN
+(including those provided by the French Environmental Code) as well as all
+commercial and non-commercial uses, whether advertising or not.
+These rights may be exclusively or non-exclusively assigned to any
+third party IFPEN chooses.
+
+ARTICLE 2. ASSIGNED RIGHTS OVER MODIFIED VERSION
+
+The LICENSEE shall assign, in the conditions provided for in Article 1,
+the following rights:
+
+(i) - the right to reproduce, disseminate, or distribute, on a permanent
+or temporary basis, the MODIFIED VERSION by any means and in any form,
+in part or in whole;
+
+(ii) - the right to translate, adapt, arrange, or modify in any way including
+deleting the MODIFIED VERSION and to reproduce the resulting MODIFIED VERSION
+including, in whole or in part, the right to incorporate, in whole or in part,
+the MODIFIED VERSION in another creation and vice versa;
+
+(iii) - the right to put on the market for consideration or not, including
+by rental, the MODIFIED VERSION or copies resulting therefrom by any process.
+For the purpose of this APPENDIX A, the term commercial uses includes (i) any
+disclosure, supply, assignment, transfer, sale, rental, distribution and/or
+provision of all or part of the MODIFIED VERSION alone or incorporated or
+incorporating other creations to a third party, (ii) more generally, any use
+generating profits or revenues.
+The term non-commercial includes notably (i) IFPEN research and development
+work for its own account or on behalf of third parties, (ii) use in IFPEN’s own
+facilities or facilities in which IFPEN operates or in third-party facilities,
+and (iii) use for assessments, public or private appraisals; studies at the
+request of third parties or at the request of the public authorities, with
+or without consideration.
+
+
+The assigned rights include the right for IPFEN to assign or grant to third
+parties all or part of the rights granted under Articles 1 and 2 of this
+APPENDIX A under the same conditions as articles 1 and 2.
+
+The right to reproduce includes the right to reproduce or cause to be
+reproduced the MODIFIED VERSION, in whole or in part, separately or incorporated
+in one or more components or incorporating one or more other components,
+whatever the destination, by any means, any form and format, existing or
+future, including paper, computer, magnetic, optical, video, digital, online
+data processing, or electronic format, in as many copies as IFPEN deems necessary.
+
+The right to execute includes the right to publicly execute or cause to
+be executed, in whole or in part, the MODIFIED VERSION or their secondary
+operations, separately or incorporated in one or more components or
+incorporating one or more other components, by any current or future
+communication means or media, including, in particular, public or private display,
+terrestrial broadcasting, by cable, satellite, and the digital network,
+by analogue, digital and/or on-line data transmission, or by any national or
+international public or private means, telecommunication and electronic
+transmission networks, for any public or private body, internal or external,
+for national or international execution, by a specific or common broadcast channel;
+
+The right to adapt includes the right to translate or to have translated
+the MODIFIED VERSION into any language, programming language, to make
+corrections, adaptations, assemblies, and modifications necessary to use and
+promote the MODIFIED VERSION. It also includes the right to use, for the
+needs of IFPEN, extracts from these MODIFIED VERSIONS or components that
+have been used to reproduce, execute and/or market them in any composite work.
+
+The right to distribute includes the right to put on the market, in whole
+or in part, MODIFIED VERSION, whether or not for consideration, to lend,
+rent, or sell, by any means or format, existing or future, for all or part of
+the public or third parties without restriction. 
+
