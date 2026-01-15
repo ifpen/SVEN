@@ -122,7 +122,7 @@ cases = ["15"]#, "10", "24"] # wind velocity
 
 nRotations = 10. # Number of rotations
 DegreesPerTimeStep = 10. # Azimuthal step
-rotationsKeptInWake = 10. # Equivalent number of rotations kept for wake length  
+rotationsKeptInWake = 10 # Equivalent number of rotations kept for wake length  
 nearWakeLength = 360*rotationsKeptInWake # Wake length
 innerIter  = 12 # Iterations for GammaBound convergence
 
